@@ -2,7 +2,6 @@ import { model, Schema } from "mongoose";
 
 const userSchema = new Schema(
   {
-    _id: { type: Number, required: true },
     fullName: { type: String, required: true, trim: true },
     email: { type: String, required: true, unique: true, lowercase: true },
     role: {
@@ -14,16 +13,14 @@ const userSchema = new Schema(
     },
     phone: { type: String, required: true },
     passwordHash: { type: String, required: true },
-    isActive: { type: Boolean, required: true },
+    isActive: { type: Boolean, required: true, default: false },
+    birthDate: {
+      type: Date,
+      required: true,
+    },
     // student fields
     study: {
       type: String,
-      required: function () {
-        return this.role === "student";
-      },
-    },
-    birthDate: {
-      type: Date,
       required: function () {
         return this.role === "student";
       },
@@ -36,12 +33,12 @@ const userSchema = new Schema(
       },
     },
     bio: {
-      // الملخص
       type: String,
       required: function () {
         return this.role === "teacher";
       },
     },
+    deletedAt: { type: Date, default: null },
   },
 
   { timestamps: true },
