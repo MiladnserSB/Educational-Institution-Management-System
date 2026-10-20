@@ -106,7 +106,7 @@ const getAuthenticatedUser = async (req) => {
   }
 
   return authService.authenticateToken(token);
-}
+};
 
 export async function logout(req, res) {
   try {

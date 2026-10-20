@@ -72,14 +72,11 @@ export const authenticateToken = async (token) => {
     });
   }
 
-  if (
-    typeof payload !== "object" ||
-    typeof payload.id !== "string"
-  ) {
+  if (typeof payload !== "object" || typeof payload.id !== "string") {
     throw Object.assign(new Error("Invalid token payload"), { status: 401 });
   }
 
-  const user = await User.findById(payload.id);
+  const user = await User.findById(payload.id).lean();
 
   if (!user) {
     throw Object.assign(new Error("User not found"), {
@@ -87,7 +84,8 @@ export const authenticateToken = async (token) => {
     });
   }
 
-  return user;
-}
+  const { password, _id, ...rest } = user;
+  return { ...rest, id: _id };
+};
 
 export async function logoutUser(userId) {}

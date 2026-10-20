@@ -1,129 +1,131 @@
-export const getUsers = async ({
-  page = 1,
-  limit = 10,
-  role,
-  isActive,
-  search,
-} = {}) => {
-  const filter = { deletedAt: null };
+// import User from "../models/userModel.js";
 
-  if (role) filter.role = role;
-  if (typeof isActive === "boolean") filter.isActive = isActive;
-  if (search) {
-    filter.$or = [
-      { fullName: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
-    ];
-  }
+// export const getUsers = async ({
+//   page = 1,
+//   limit = 10,
+//   role,
+//   isActive,
+//   search,
+// } = {}) => {
+//   const filter = { deletedAt: null };
 
-  const skip = (page - 1) * limit;
+//   if (role) filter.role = role;
+//   if (typeof isActive === "boolean") filter.isActive = isActive;
+//   if (search) {
+//     filter.$or = [
+//       { fullName: { $regex: search, $options: "i" } },
+//       { email: { $regex: search, $options: "i" } },
+//     ];
+//   }
 
-  const [users, total] = await Promise.all([
-    User.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
-    User.countDocuments(filter),
-  ]);
+//   const skip = (page - 1) * limit;
 
-  return {
-    data: toUserResponseList(users),
-    pagination: {
-      total,
-      page,
-      limit,
-      pages: Math.ceil(total / limit),
-    },
-  };
-};
+//   const [users, total] = await Promise.all([
+//     User.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
+//     User.countDocuments(filter),
+//   ]);
 
-// ============ READ (One) ============
-export const getUserById = async (id) => {
-  const user = await User.findOne({ _id: id, deletedAt: null });
-  if (!user) throw new AppError("User not found", 404);
-  return toUserResponse(user);
-};
+//   return {
+//     data: toUserResponseList(users),
+//     pagination: {
+//       total,
+//       page,
+//       limit,
+//       pages: Math.ceil(total / limit),
+//     },
+//   };
+// };
 
-// ============ UPDATE ============
-export const updateUser = async (id, payload) => {
-  const user = await User.findOne({ _id: id, deletedAt: null });
-  if (!user) throw new AppError("User not found", 404);
+// // ============ READ (One) ============
+// export const getUserById = async (id) => {
+//   const user = await User.findOne({ _id: id, deletedAt: null });
+//   if (!user) throw new AppError("User not found", 404);
+//   return toUserResponse(user);
+// };
 
-  // منع تكرار الإيميل
-  if (payload.email && payload.email !== user.email) {
-    const exists = await User.findOne({ email: payload.email });
-    if (exists) throw new AppError("Email already exists", 409);
-  }
+// // ============ UPDATE ============
+// export const updateUser = async (id, payload) => {
+//   const user = await User.findOne({ _id: id, deletedAt: null });
+//   if (!user) throw new AppError("User not found", 404);
 
-  // الـ role النهائي بعد التحديث (لحساب حقول التحقق الشرطية)
-  const finalRole = payload.role ?? user.role;
+//   // منع تكرار الإيميل
+//   if (payload.email && payload.email !== user.email) {
+//     const exists = await User.findOne({ email: payload.email });
+//     if (exists) throw new AppError("Email already exists", 409);
+//   }
 
-  // إذا تغيّر الـ role، نحذف الحقول غير المنطبقة
-  if (finalRole === "student") {
-    user.specialization = undefined;
-    user.bio = undefined;
-  } else if (finalRole === "teacher") {
-    user.study = undefined;
-  } else {
-    // admin / secretary
-    user.study = undefined;
-    user.specialization = undefined;
-    user.bio = undefined;
-  }
+//   // الـ role النهائي بعد التحديث (لحساب حقول التحقق الشرطية)
+//   const finalRole = payload.role ?? user.role;
 
-  // الحقول المسموح تحديثها
-  const updatable = [
-    "fullName",
-    "email",
-    "phone",
-    "role",
-    "isActive",
-    "birthDate",
-  ];
-  for (const key of updatable) {
-    if (payload[key] !== undefined) user[key] = payload[key];
-  }
+//   // إذا تغيّر الـ role، نحذف الحقول غير المنطبقة
+//   if (finalRole === "student") {
+//     user.specialization = undefined;
+//     user.bio = undefined;
+//   } else if (finalRole === "teacher") {
+//     user.study = undefined;
+//   } else {
+//     // admin / secretary
+//     user.study = undefined;
+//     user.specialization = undefined;
+//     user.bio = undefined;
+//   }
 
-  // حقول خاصة بالـ role
-  if (finalRole === "student" && payload.study !== undefined)
-    user.study = payload.study;
-  if (finalRole === "teacher") {
-    if (payload.specialization !== undefined)
-      user.specialization = payload.specialization;
-    if (payload.bio !== undefined) user.bio = payload.bio;
-  }
+//   // الحقول المسموح تحديثها
+//   const updatable = [
+//     "fullName",
+//     "email",
+//     "phone",
+//     "role",
+//     "isActive",
+//     "birthDate",
+//   ];
+//   for (const key of updatable) {
+//     if (payload[key] !== undefined) user[key] = payload[key];
+//   }
 
-  // كلمة المرور
-  if (payload.password) {
-    user.passwordHash = await bcrypt.hash(payload.password, 10);
-  }
+//   // حقول خاصة بالـ role
+//   if (finalRole === "student" && payload.study !== undefined)
+//     user.study = payload.study;
+//   if (finalRole === "teacher") {
+//     if (payload.specialization !== undefined)
+//       user.specialization = payload.specialization;
+//     if (payload.bio !== undefined) user.bio = payload.bio;
+//   }
 
-  await user.save(); // يشغّل الـ validators
-  return toUserResponse(user);
-};
+//   // كلمة المرور
+//   if (payload.password) {
+//     user.passwordHash = await bcrypt.hash(payload.password, 10);
+//   }
 
-// ============ DELETE (Soft) ============
-export const softDeleteUser = async (id) => {
-  const user = await User.findOneAndUpdate(
-    { _id: id, deletedAt: null },
-    { deletedAt: new Date(), isActive: false },
-    { new: true },
-  );
-  if (!user) throw new AppError("User not found", 404);
-  return toUserResponse(user);
-};
+//   await user.save(); // يشغّل الـ validators
+//   return toUserResponse(user);
+// };
 
-// ============ DELETE (Hard) ============
-export const hardDeleteUser = async (id) => {
-  const user = await User.findByIdAndDelete(id);
-  if (!user) throw new AppError("User not found", 404);
-  return { message: "User permanently deleted" };
-};
+// // ============ DELETE (Soft) ============
+// export const softDeleteUser = async (id) => {
+//   const user = await User.findOneAndUpdate(
+//     { _id: id, deletedAt: null },
+//     { deletedAt: new Date(), isActive: false },
+//     { new: true },
+//   );
+//   if (!user) throw new AppError("User not found", 404);
+//   return toUserResponse(user);
+// };
 
-// ============ RESTORE ============
-export const restoreUser = async (id) => {
-  const user = await User.findOneAndUpdate(
-    { _id: id, deletedAt: { $ne: null } },
-    { deletedAt: null, isActive: true },
-    { new: true },
-  );
-  if (!user) throw new AppError("Deleted user not found", 404);
-  return toUserResponse(user);
-};
+// // ============ DELETE (Hard) ============
+// export const hardDeleteUser = async (id) => {
+//   const user = await User.findByIdAndDelete(id);
+//   if (!user) throw new AppError("User not found", 404);
+//   return { message: "User permanently deleted" };
+// };
+
+// // ============ RESTORE ============
+// export const restoreUser = async (id) => {
+//   const user = await User.findOneAndUpdate(
+//     { _id: id, deletedAt: { $ne: null } },
+//     { deletedAt: null, isActive: true },
+//     { new: true },
+//   );
+//   if (!user) throw new AppError("Deleted user not found", 404);
+//   return toUserResponse(user);
+// };
