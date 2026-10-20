@@ -23,4 +23,5 @@ const cohortSchema = new Schema(
   },
 );
 
-export const Cohort = model("Cohort", cohortSchema);
+const Cohort = model("Cohort", cohortSchema);
+export default Cohort;

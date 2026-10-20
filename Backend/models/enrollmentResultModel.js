@@ -10,7 +10,7 @@ const enrollmentResultSchema = new Schema(
     },
     score: { type: Number, required: true },
     maxScore: { type: Number, required: true },
-    qrade: { type: String, required: true },
+    grade: { type: String, required: true },
     notes: { type: String, required: true },
     isActive: { type: Boolean, required: true, default: false },
     deletedAt: { type: Date, default: null },
@@ -20,7 +20,8 @@ const enrollmentResultSchema = new Schema(
   },
 );
 
-export const EnrollmentResult = model(
+const EnrollmentResult = model(
   "EnrollmentResult",
   enrollmentResultSchema,
 );
+export default EnrollmentResult; 

@@ -8,8 +8,8 @@ app.use(express.json());
 app.use(cors());
 
 // Authentication routes
-app.use("/auth", authRouter);
-app.use("/admin", adminRouter);
+app.use("/api/auth", authRouter);
+// app.use("/api/admin", adminRouter);
 
 // Handle unknown routes
 app.use((req, res) => {

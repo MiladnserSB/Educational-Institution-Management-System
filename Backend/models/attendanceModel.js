@@ -2,7 +2,7 @@ import { Schema, model } from "mongoose";
 
 const AttendanceSchema = new Schema(
   {
-    SessionId: {
+    sessionId: {
       type: Schema.Types.ObjectId,
       ref: "Session",
       required: true,
@@ -23,4 +23,5 @@ const AttendanceSchema = new Schema(
   },
 );
 
-export const Attendance = model("Attendance", AttendanceSchema);
+const Attendance = model("Attendance", AttendanceSchema);
+export default Attendance;

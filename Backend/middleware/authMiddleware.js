@@ -7,7 +7,7 @@ export async function authenticateToken(req, res, next) {
     if (!authorization || !authorization.startsWith("Bearer ")) {
       return res.status(401).json({
         success: false,
-        message: "Authentication token required",
+        message: "authorization token required",
       });
     }
 
@@ -16,7 +16,7 @@ export async function authenticateToken(req, res, next) {
     if (!token) {
       return res.status(401).json({
         success: false,
-        message: "Authentication token required",
+        message: "authorization token required",
       });
     }
 
@@ -28,7 +28,7 @@ export async function authenticateToken(req, res, next) {
   } catch (error) {
     return res.status(error.status || 500).json({
       success: false,
-      message: error.status === 401 ? error.message : "Authentication failed",
+      message: error.status === 401 ? error.message : "authorization failed",
     });
   }
 }

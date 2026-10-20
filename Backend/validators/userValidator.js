@@ -55,3 +55,8 @@ export const updateUserSchema = z
     bio: z.string().optional(),
   })
   .strict();
+
+export const loginUserSchema = z.object({
+  email: baseUser.email,
+  password: z.string().min(6).max(64),
+});

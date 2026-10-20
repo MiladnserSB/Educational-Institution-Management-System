@@ -3,7 +3,7 @@ import "dotenv/config";
 import { dbConnect } from "./config/db.js";
 
 
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, async () => {
   await dbConnect();

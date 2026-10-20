@@ -13,7 +13,7 @@ const userSchema = new Schema(
       },
     },
     phone: { type: String, required: true },
-    passwordHash: { type: String, required: true },
+    password: { type: String, required: true },
     isActive: { type: Boolean, required: true, default: false },
     birthDate: {
       type: Date,

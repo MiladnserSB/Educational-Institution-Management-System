@@ -8,7 +8,7 @@ const enrollmentSchema = new Schema(
       required: true,
       trim: true,
     },
-    cohorttId: {
+    cohortId: {
       type: Schema.Types.ObjectId,
       ref: "Cohort",
       required: true,
@@ -29,4 +29,5 @@ const enrollmentSchema = new Schema(
   },
 );
 
-export const Enrollment = model("Enrollment", enrollmentSchema);
+const Enrollment = model("Enrollment", enrollmentSchema);
+export default Enrollment;

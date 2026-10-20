@@ -1,59 +1,34 @@
-import "dotenv/config"
+import "dotenv/config";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 
-function generateToken(user) {
+const generateToken = (user) => {
   return jwt.sign(
     {
-      id: user._id.toString(),
-      tokenVersion: user.tokenVersion,
+      id: user.id.toString(),
+      email: user.email,
+      role: user.role,
     },
     process.env.JWT_SECRET,
     {
       expiresIn: process.env.JWT_EXPIRES_IN || "1d",
     },
   );
-}
+};
 
-function publicUser(user) {
+const handleUser = (user) => {
   return {
     id: user._id,
-    name: user.name,
+    fullName: user.fullName,
     email: user.email,
+    role: user.role,
+    isActive: user.isActive,
   };
-}
+};
 
-export async function registerUser({ name, email, password }) {
-  if (
-    typeof name !== "string" ||
-    typeof email !== "string" ||
-    typeof password !== "string"
-  ) {
-    throw Object.assign(new Error("Invalid input data"), { status: 400 });
-  }
-
-  name = name.trim();
-  email = email.trim().toLowerCase();
-
-  if (!name || name.length < 2 || name.length > 100) {
-    throw Object.assign(new Error("Name must be 2-100 characters"), {
-      status: 400,
-    });
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    throw Object.assign(new Error("Invalid email address"), { status: 400 });
-  }
-
-  if (password.length < 8 || Buffer.byteLength(password, "utf8") > 72) {
-    throw Object.assign(
-      new Error("Password must be at least 8 characters and at most 72 bytes"),
-      { status: 400 },
-    );
-  }
-
-  const existingUser = await User.findOne({ email });
+export const registerUser = async (user) => {
+  const existingUser = await User.findOne({ email: user.email });
 
   if (existingUser) {
     throw Object.assign(new Error("Email already registered"), {
@@ -61,32 +36,18 @@ export async function registerUser({ name, email, password }) {
     });
   }
 
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const hashedPassword = await bcrypt.hash(user.password, 12);
 
-  const user = await User.create({
-    name,
-    email,
-    password: hashedPassword,
-  });
+  const createUser = await User.create({ ...user, password: hashedPassword });
 
   return {
-    user: publicUser(user),
-    token: generateToken(user),
+    user: handleUser(createUser),
+    token: generateToken(createUser),
   };
-}
+};
 
-export async function loginUser({ email, password }) {
-  if (typeof email !== "string" || typeof password !== "string") {
-    throw Object.assign(new Error("Email and password are required"), {
-      status: 400,
-    });
-  }
-
-  const normalizedEmail = email.trim().toLowerCase();
-
-  const user = await User.findOne({ email: normalizedEmail }).select(
-    "+password",
-  );
+export const loginUser = async ({ email, password }) => {
+  const user = await User.findOne({ email });
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
     throw Object.assign(new Error("Invalid email or password"), {
@@ -95,12 +56,12 @@ export async function loginUser({ email, password }) {
   }
 
   return {
-    user: publicUser(user),
+    user: handleUser(user),
     token: generateToken(user),
   };
-}
+};
 
-export async function authenticateToken(token) {
+export const authenticateToken = async (token) => {
   let payload;
 
   try {
@@ -113,33 +74,20 @@ export async function authenticateToken(token) {
 
   if (
     typeof payload !== "object" ||
-    typeof payload.id !== "string" ||
-    !Number.isInteger(payload.tokenVersion)
+    typeof payload.id !== "string"
   ) {
     throw Object.assign(new Error("Invalid token payload"), { status: 401 });
   }
 
   const user = await User.findById(payload.id);
 
-  if (!user || user.tokenVersion !== payload.tokenVersion) {
-    throw Object.assign(new Error("Session expired or logged out"), {
-      status: 401,
+  if (!user) {
+    throw Object.assign(new Error("User not found"), {
+      status: 404,
     });
   }
 
   return user;
 }
 
-export async function logoutUser(userId) {
-  const user = await User.findByIdAndUpdate(
-    userId,
-    { $inc: { tokenVersion: 1 } },
-    { new: true },
-  );
-
-  if (!user) {
-    throw Object.assign(new Error("User not found"), { status: 401 });
-  }
-
-  return true;
-}
+export async function logoutUser(userId) {}

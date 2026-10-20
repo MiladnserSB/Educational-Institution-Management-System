@@ -23,5 +23,5 @@ const StudentNoteSchema = new Schema(
     timestamps: true,
   },
 );
-
-export const StudentNote = model("StudentNote", NoteSchema);
+const StudentNote = model("StudentNote", NoteSchema);
+export default StudentNote;

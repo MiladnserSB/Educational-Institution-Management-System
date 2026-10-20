@@ -13,4 +13,5 @@ const levelShcema = new Schema(
   },
 );
 
-export const Level = model("Level", levelShcema);
+const Level = model("Level", levelShcema);
+export default Level;
