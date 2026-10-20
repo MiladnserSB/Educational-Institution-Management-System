@@ -1,5 +1,6 @@
 # Front-End Structure
 
+```text
 Frontend/
 ├── eslint.config.js
 ├── index.html
@@ -64,3 +65,4 @@ Frontend/
 ├── services/
 │ └── api.js
 └── utils/
+```
