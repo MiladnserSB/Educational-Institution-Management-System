@@ -1,6 +1,7 @@
+import "dotenv/config"
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import User from "../models/User.js";
+import User from "../models/userModel.js";
 
 function generateToken(user) {
   return jwt.sign(
@@ -10,7 +11,7 @@ function generateToken(user) {
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: process.env.JWT_EXPIRES_IN || "15m",
+      expiresIn: process.env.JWT_EXPIRES_IN || "1d",
     },
   );
 }

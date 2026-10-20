@@ -88,7 +88,7 @@ async function getAuthenticatedUser(req) {
   const authorization = req.headers.authorization;
 
   if (!authorization || !authorization.startsWith("Bearer ")) {
-    throw Object.assign(new Error("Authentication token required"), {
+    throw Object.assign(new Error("authorization token required"), {
       status: 401,
     });
   }
@@ -96,7 +96,7 @@ async function getAuthenticatedUser(req) {
   const token = authorization.slice(7).trim();
 
   if (!token) {
-    throw Object.assign(new Error("Authentication token required"), {
+    throw Object.assign(new Error("authorization token required"), {
       status: 401,
     });
   }
