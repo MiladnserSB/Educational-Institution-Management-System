@@ -9,6 +9,7 @@ app.use(cors());
 
 // Authentication routes
 app.use("/auth", authRouter);
+app.use("/admin", adminRouter);
 
 // Handle unknown routes
 app.use((req, res) => {
