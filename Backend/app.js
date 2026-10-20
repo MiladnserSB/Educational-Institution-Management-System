@@ -3,10 +3,16 @@ import cors from "cors";
 const app = express();
 app.use(express.json());
 app.use(cors());
-app.get("/", (req, res) => {
-  res.send("Welcome to my Application");
+
+// Authentication routes
+app.use("/auth", authRoutes);
+
+// Handle unknown routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found",
+  });
 });
-
-
 
 export default app;
