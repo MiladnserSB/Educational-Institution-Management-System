@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 
-const NoteSchema = new Schema(
+const StudentNoteSchema = new Schema(
   {
     studentId: {
       type: Schema.Types.ObjectId,
@@ -24,4 +24,4 @@ const NoteSchema = new Schema(
   },
 );
 
-export const Note = model("Session", NoteSchema);
+export const StudentNote = model("StudentNote", NoteSchema);

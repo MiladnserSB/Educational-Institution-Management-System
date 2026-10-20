@@ -1,9 +1,9 @@
 import { Schema, model } from "mongoose";
 
 const SessionSchema = new Schema({
-  courseId: {
+  cohortId: {
     type: Schema.Types.ObjectId,
-    ref: "Course",
+    ref: "Cohort",
     required: true,
   },
   sessionNumber: { type: Number, required: true },

@@ -14,7 +14,7 @@ const AttendanceSchema = new Schema(
     },
     status: {
       type: String,
-      enum: { values: ["present", "absent", "late"] },
+      enum: { values: ["present", "absent", "late", "excused"] },
       message: "The Type Of Process must is present, absent, late",
     },
   },
@@ -23,4 +23,4 @@ const AttendanceSchema = new Schema(
   },
 );
 
-export const Attendance = model("Session", AttendanceSchema);
+export const Attendance = model("Attendance", AttendanceSchema);

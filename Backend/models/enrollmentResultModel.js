@@ -4,7 +4,7 @@ const enrollmentResultSchema = new Schema(
   {
     enrollmentId: {
       type: Schema.Types.ObjectId,
-      ref: "enrollments",
+      ref: "Enrollment",
       required: true,
       trim: true,
     },

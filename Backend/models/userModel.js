@@ -9,6 +9,7 @@ const userSchema = new Schema(
       required: true,
       enum: {
         values: ["admin", "secretary", "teacher", "student"],
+        message: "the role must be admin, secretary, teacher, student"
       },
     },
     phone: { type: String, required: true },
