@@ -1,131 +1,136 @@
-// import User from "../models/userModel.js";
+import * as usersSvc from "../services/userService.js";
+import * as cohortsSvc from "../services/cohortService.js";
+import * as coursesSvc from "../services/courseService.js";
+import * as levelsSvc from "../services/levelService.js";
+import * as approvalsSvc from "../services/ApprovalService.js";
+import * as analyticsSvc from "../services/adminService.js";
+import { ok, created, catchAsync } from "../utils/lib.js";
 
-// export const getUsers = async ({
-//   page = 1,
-//   limit = 10,
-//   role,
-//   isActive,
-//   search,
-// } = {}) => {
-//   const filter = { deletedAt: null };
+// ---- Dashboard ----
+export const stats = catchAsync(async (req, res) =>
+  ok(res, await analyticsSvc.getStats()),
+);
 
-//   if (role) filter.role = role;
-//   if (typeof isActive === "boolean") filter.isActive = isActive;
-//   if (search) {
-//     filter.$or = [
-//       { fullName: { $regex: search, $options: "i" } },
-//       { email: { $regex: search, $options: "i" } },
-//     ];
-//   }
+export const activity = catchAsync(async (req, res) =>
+  ok(res, await analyticsSvc.getActivity(req.query.limit || 5)),
+);
 
-//   const skip = (page - 1) * limit;
+// ---- Users ----
+export const listUsers = catchAsync(async (req, res) => {
+  const { items, meta } = await usersSvc.listUsers(req.query);
+  ok(res, { items, meta });
+});
 
-//   const [users, total] = await Promise.all([
-//     User.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
-//     User.countDocuments(filter),
-//   ]);
+export const getUser = catchAsync(async (req, res) =>
+  ok(res, await usersSvc.getUser(req.params.id)),
+);
 
-//   return {
-//     data: toUserResponseList(users),
-//     pagination: {
-//       total,
-//       page,
-//       limit,
-//       pages: Math.ceil(total / limit),
-//     },
-//   };
-// };
+export const createUser = catchAsync(async (req, res) =>
+  created(res, await usersSvc.createUser(req.body)),
+);
 
-// // ============ READ (One) ============
-// export const getUserById = async (id) => {
-//   const user = await User.findOne({ _id: id, deletedAt: null });
-//   if (!user) throw new AppError("User not found", 404);
-//   return toUserResponse(user);
-// };
+export const updateUser = catchAsync(async (req, res) =>
+  ok(res, await usersSvc.updateUser(req.params.id, req.body)),
+);
 
-// // ============ UPDATE ============
-// export const updateUser = async (id, payload) => {
-//   const user = await User.findOne({ _id: id, deletedAt: null });
-//   if (!user) throw new AppError("User not found", 404);
+export const toggleUserActive = catchAsync(async (req, res) =>
+  ok(res, await usersSvc.toggleActive(req.params.id, req.body.isActive)),
+);
 
-//   // منع تكرار الإيميل
-//   if (payload.email && payload.email !== user.email) {
-//     const exists = await User.findOne({ email: payload.email });
-//     if (exists) throw new AppError("Email already exists", 409);
-//   }
+export const deleteUser = catchAsync(async (req, res) =>
+  ok(res, await usersSvc.deleteUser(req.params.id)),
+);
 
-//   // الـ role النهائي بعد التحديث (لحساب حقول التحقق الشرطية)
-//   const finalRole = payload.role ?? user.role;
+// ---- Approvals ----
+export const listApprovals = catchAsync(async (req, res) =>
+  ok(res, await approvalsSvc.listApprovals(req.query.collection)),
+);
 
-//   // إذا تغيّر الـ role، نحذف الحقول غير المنطبقة
-//   if (finalRole === "student") {
-//     user.specialization = undefined;
-//     user.bio = undefined;
-//   } else if (finalRole === "teacher") {
-//     user.study = undefined;
-//   } else {
-//     // admin / secretary
-//     user.study = undefined;
-//     user.specialization = undefined;
-//     user.bio = undefined;
-//   }
+export const approve = catchAsync(async (req, res) =>
+  ok(res, await approvalsSvc.approve(req.params.collection, req.params.id)),
+);
 
-//   // الحقول المسموح تحديثها
-//   const updatable = [
-//     "fullName",
-//     "email",
-//     "phone",
-//     "role",
-//     "isActive",
-//     "birthDate",
-//   ];
-//   for (const key of updatable) {
-//     if (payload[key] !== undefined) user[key] = payload[key];
-//   }
+export const reject = catchAsync(async (req, res) =>
+  ok(res, await approvalsSvc.reject(req.params.collection, req.params.id)),
+);
 
-//   // حقول خاصة بالـ role
-//   if (finalRole === "student" && payload.study !== undefined)
-//     user.study = payload.study;
-//   if (finalRole === "teacher") {
-//     if (payload.specialization !== undefined)
-//       user.specialization = payload.specialization;
-//     if (payload.bio !== undefined) user.bio = payload.bio;
-//   }
+// ---- Reports ----
+export const reportOverview = catchAsync(async (req, res) =>
+  ok(res, await analyticsSvc.getOverview(req.query)),
+);
 
-//   // كلمة المرور
-//   if (payload.password) {
-//     user.passwordHash = await bcrypt.hash(payload.password, 10);
-//   }
+export const reportCohort = catchAsync(async (req, res) =>
+  ok(res, await analyticsSvc.getCohortReport(req.params.id)),
+);
 
-//   await user.save(); // يشغّل الـ validators
-//   return toUserResponse(user);
-// };
+export const exportReport = catchAsync(async (req, res) => {
+  const result = await analyticsSvc.exportReport(req.query);
+  if (req.query.format === "csv") {
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="report.csv"');
+    return res.send(result.csv);
+  }
+  ok(res, result.json);
+});
 
-// // ============ DELETE (Soft) ============
-// export const softDeleteUser = async (id) => {
-//   const user = await User.findOneAndUpdate(
-//     { _id: id, deletedAt: null },
-//     { deletedAt: new Date(), isActive: false },
-//     { new: true },
-//   );
-//   if (!user) throw new AppError("User not found", 404);
-//   return toUserResponse(user);
-// };
+// ---- Cohorts ----
+export const listCohorts = catchAsync(async (req, res) => {
+  const { items, meta } = await cohortsSvc.listCohorts(req.query);
+  ok(res, { items, meta });
+});
 
-// // ============ DELETE (Hard) ============
-// export const hardDeleteUser = async (id) => {
-//   const user = await User.findByIdAndDelete(id);
-//   if (!user) throw new AppError("User not found", 404);
-//   return { message: "User permanently deleted" };
-// };
+export const getCohort = catchAsync(async (req, res) =>
+  ok(res, await cohortsSvc.getCohort(req.params.id)),
+);
 
-// // ============ RESTORE ============
-// export const restoreUser = async (id) => {
-//   const user = await User.findOneAndUpdate(
-//     { _id: id, deletedAt: { $ne: null } },
-//     { deletedAt: null, isActive: true },
-//     { new: true },
-//   );
-//   if (!user) throw new AppError("Deleted user not found", 404);
-//   return toUserResponse(user);
-// };
+export const createCohort = catchAsync(async (req, res) =>
+  created(res, await cohortsSvc.createCohort(req.body)),
+);
+
+export const updateCohort = catchAsync(async (req, res) =>
+  ok(res, await cohortsSvc.updateCohort(req.params.id, req.body)),
+);
+
+export const deleteCohort = catchAsync(async (req, res) =>
+  ok(res, await cohortsSvc.deleteCohort(req.params.id)),
+);
+
+export const listCohortEnrollments = catchAsync(async (req, res) =>
+  ok(res, await cohortsSvc.listCohortEnrollments(req.params.id)),
+);
+
+// ---- Courses ----
+export const listCourses = catchAsync(async (req, res) => {
+  const { items, meta } = await coursesSvc.listCourses(req.query);
+  ok(res, { items, meta });
+});
+
+export const createCourse = catchAsync(async (req, res) =>
+  created(res, await coursesSvc.createCourse(req.body)),
+);
+
+export const updateCourse = catchAsync(async (req, res) =>
+  ok(res, await coursesSvc.updateCourse(req.params.id, req.body)),
+);
+
+export const deleteCourse = catchAsync(async (req, res) =>
+  ok(res, await coursesSvc.deleteCourse(req.params.id)),
+);
+
+// ---- Levels ----
+export const listLevels = catchAsync(async (req, res) => {
+  const { items, meta } = await levelsSvc.listLevels(req.query);
+  ok(res, { items, meta });
+});
+
+export const createLevel = catchAsync(async (req, res) =>
+  created(res, await levelsSvc.createLevel(req.body)),
+);
+
+export const updateLevel = catchAsync(async (req, res) =>
+  ok(res, await levelsSvc.updateLevel(req.params.id, req.body)),
+);
+
+export const deleteLevel = catchAsync(async (req, res) =>
+  ok(res, await levelsSvc.deleteLevel(req.params.id)),
+);

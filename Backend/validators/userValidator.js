@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const oid = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid ObjectId");
+
 const baseUser = {
   fullName: z.string().min(2).max(100),
   email: z.string().email(),
@@ -60,3 +62,5 @@ export const loginUserSchema = z.object({
   email: baseUser.email,
   password: z.string().min(6).max(64),
 });
+
+export const toggleActiveSchema = z.object({ isActive: z.boolean() });

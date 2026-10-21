@@ -14,6 +14,7 @@ const enrollmentResultSchema = new Schema(
     notes: { type: String, required: true },
     isActive: { type: Boolean, required: true, default: false },
     deletedAt: { type: Date, default: null },
+    kind: { type: String, default: "" },
   },
   {
     timestamps: true,

@@ -2,30 +2,7 @@ import "dotenv/config";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
-
-const generateToken = (user) => {
-  return jwt.sign(
-    {
-      id: user.id.toString(),
-      email: user.email,
-      role: user.role,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_EXPIRES_IN || "1d",
-    },
-  );
-};
-
-const handleUser = (user) => {
-  return {
-    id: user._id,
-    fullName: user.fullName,
-    email: user.email,
-    role: user.role,
-    isActive: user.isActive,
-  };
-};
+import { generateToken, handleUser } from "../utils/lib.js";
 
 export const registerUser = async (user) => {
   const existingUser = await User.findOne({ email: user.email });

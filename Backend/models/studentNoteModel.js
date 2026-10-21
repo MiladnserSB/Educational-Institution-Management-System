@@ -18,10 +18,11 @@ const StudentNoteSchema = new Schema(
       enum: { values: ["teacherOnly", "admin", "student"] },
       message: "The Type Of Process must is teacherOnly, admin, student",
     },
+    deletedAt: { type: Date, default: null },
   },
   {
     timestamps: true,
   },
 );
-const StudentNote = model("StudentNote", NoteSchema);
+const StudentNote = model("StudentNote", StudentNoteSchema);
 export default StudentNote;

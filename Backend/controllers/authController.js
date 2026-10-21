@@ -3,22 +3,7 @@ import {
   createUserSchema,
   loginUserSchema,
 } from "../validators/userValidator.js";
-
-const handleError = (res, error) => {
-  if (error.code === 11000) {
-    return res.status(409).json({
-      success: false,
-      message: "Email already registered",
-    });
-  }
-
-  const status = error.status || 500;
-
-  return res.status(status).json({
-    success: false,
-    message: status === 500 ? "Internal server error" : error.message,
-  });
-};
+import { handleError } from "../utils/lib.js";
 
 export const register = async (req, res) => {
   try {
@@ -64,6 +49,7 @@ export const login = async (req, res) => {
       );
     }
     const result = await authService.loginUser(req.body);
+    console.log(result)
 
     return res.status(200).json({
       success: true,
