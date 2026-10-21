@@ -5,7 +5,7 @@ import PageHeader from "../../components/common/PageHeader";
 import StatCard from "../../components/common/StatCard";
 import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
-import { attendanceBadge } from "../../components/common/Badge";
+import { attendanceBadge } from "../../components/common/badges";
 import useFetch from "../../hooks/useFetch";
 import { studentApi } from "../../services/studentApi";
 import { formatDate, percentage } from "../../utils";

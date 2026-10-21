@@ -1,15 +1,23 @@
 import { useState } from "react";
-import { Mail, Phone, Pencil, Save, CalendarDays, BookOpen } from "lucide-react";
+import {
+  Mail,
+  Phone,
+  Pencil,
+  CalendarDays,
+  BookOpen,
+  UserRound,
+} from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
-import Input from "../../components/common/Input";
+import Form from "../../components/common/Form";
 import Modal from "../../components/common/Modal";
 import Avatar from "../../components/common/Avatar";
-import Badge, { accountStatusBadge } from "../../components/common/Badge";
+import { accountStatusBadge } from "../../components/common/badges";
+import Badge from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/auth";
+import { useToast } from "../../context/toast";
 import { studentApi } from "../../services/studentApi";
 import { formatDate, roleLabel } from "../../utils";
 
@@ -37,8 +45,6 @@ const ProfilePage = () => {
     fullName: user?.fullName || "",
     phone: user?.phone || "",
   });
-  const [error, setError] = useState("");
-  const [saving, setSaving] = useState(false);
 
   // GET /api/student/me holds the full profile of the signed-in student.
   const profileResult = useFetch(() => studentApi.me(), []);
@@ -63,38 +69,28 @@ const ProfilePage = () => {
       fullName: profile?.fullName || user.fullName || "",
       phone: profile?.phone || user.phone || "",
     });
-    setError("");
     setEditOpen(true);
   };
 
-  const submit = async (event) => {
-    event.preventDefault();
-    if (!form.fullName.trim()) {
-      setError("الاسم الكامل مطلوب.");
+  const submit = async (values) => {
+    const fullName = String(values.fullName || "").trim();
+    const phone = String(values.phone || "").trim();
+    if (!fullName) {
+      toast("error", "الاسم الكامل مطلوب.");
       return;
     }
-    if (String(form.phone || "").trim().length < 6) {
-      setError("رقم الجوال يجب ألا يقل عن 6 أحرف.");
+    if (phone.length < 6) {
+      toast("error", "رقم الجوال يجب ألا يقل عن 6 أحرف.");
       return;
     }
-    setSaving(true);
     try {
-      await studentApi.updateMe({
-        fullName: form.fullName.trim(),
-        phone: form.phone.trim(),
-      });
-      updateUser({
-        fullName: form.fullName.trim(),
-        phone: form.phone.trim(),
-      });
+      await studentApi.updateMe({ fullName, phone });
+      updateUser({ fullName, phone });
       toast("success", "تم تحديث الملف الشخصي.");
       setEditOpen(false);
       profileResult.reload();
     } catch (err) {
-      setError(err.message);
       toast("error", err.message);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -174,45 +170,43 @@ const ProfilePage = () => {
         onClose={() => setEditOpen(false)}
         title="تعديل البيانات"
         description="البريد الإلكتروني لا يمكن تغييره."
+        size="sm"
       >
-        <form onSubmit={submit} className="space-y-4" noValidate>
-          <Input
-            label="الاسم الكامل"
-            required
-            value={form.fullName}
-            onChange={(event) =>
-              setForm((current) => ({
-                ...current,
-                fullName: event.target.value,
-              }))
-            }
-            error={error || undefined}
-          />
-          <Input
-            label="رقم الجوال"
-            type="tel"
-            required
-            placeholder="05xxxxxxxx"
-            className="ltr"
-            value={form.phone}
-            onChange={(event) =>
-              setForm((current) => ({ ...current, phone: event.target.value }))
-            }
-          />
-          <div className="flex justify-end gap-2 pt-1">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setEditOpen(false)}
-            >
-              إلغاء
-            </Button>
-            <Button type="submit" loading={saving}>
-              <Save className="h-4 w-4" />
-              حفظ
-            </Button>
-          </div>
-        </form>
+        <Form
+          key={editOpen ? "edit-open" : "edit-closed"}
+          sections={[
+            {
+              title: "البيانات الشخصية",
+              description: "حدّث اسمك أو رقم جوالك.",
+              icon: <UserRound className="h-4 w-4" />,
+              fields: [
+                {
+                  name: "fullName",
+                  label: "الاسم الكامل",
+                  required: true,
+                },
+                {
+                  name: "phone",
+                  label: "رقم الجوال",
+                  type: "tel",
+                  required: true,
+                  placeholder: "05xxxxxxxx",
+                  className: "ltr",
+                  validate: (value) =>
+                    String(value || "").trim().length >= 6
+                      ? undefined
+                      : "رقم الجوال يجب ألا يقل عن 6 أحرف.",
+                },
+              ],
+            },
+          ]}
+          initialValues={{ fullName: form.fullName, phone: form.phone }}
+          columns={1}
+          submitLabel="حفظ التعديلات"
+          cancelLabel="إلغاء"
+          onCancel={() => setEditOpen(false)}
+          onSubmit={submit}
+        />
       </Modal>
     </div>
   );

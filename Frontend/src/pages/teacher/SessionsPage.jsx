@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
-import { Plus, Pencil, CheckCircle, XCircle } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  CheckCircle,
+  XCircle,
+  CalendarDays,
+  ClipboardCheck,
+} from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
@@ -8,12 +15,13 @@ import Modal from "../../components/common/Modal";
 import Table from "../../components/common/Table";
 import Filter from "../../components/common/Filter";
 import EmptyState from "../../components/common/EmptyState";
-import Badge, { sessionStatusBadge } from "../../components/common/Badge";
+import { sessionStatusBadge } from "../../components/common/badges";
+import Badge from "../../components/common/Badge";
 import Spinner from "../../components/common/Spinner";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/auth";
+import { useToast } from "../../context/toast";
 import { teacherApi } from "../../services/teacherApi";
 import {
   alive,
@@ -92,33 +100,53 @@ const TeacherSessionsPage = () => {
     return numbers.length ? Math.max(...numbers) + 1 : 1;
   };
 
-  const buildFields = () => [
+  const buildSections = () => [
     {
-      name: "cohortId",
-      label: "الدفعة",
-      options: cohortOptions,
-      required: true,
+      title: "تفاصيل الجلسة",
+      description: "رقم الجلسة وموضوعها وحالتها.",
+      icon: <CalendarDays className="h-4 w-4" />,
+      fields: [
+        {
+          name: "cohortId",
+          label: "الدفعة",
+          options: cohortOptions,
+          required: true,
+        },
+        {
+          name: "sessionNumber",
+          label: "رقم الجلسة",
+          type: "number",
+          required: true,
+          validate: (value) =>
+            Number(value) > 0 ? undefined : "رقم الجلسة يجب أن يكون موجباً.",
+        },
+        {
+          name: "topic",
+          label: "موضوع الجلسة",
+          required: true,
+          placeholder: "مثال: مقدمة في المكوّنات",
+          colSpan: 2,
+        },
+      ],
     },
     {
-      name: "sessionNumber",
-      label: "رقم الجلسة",
-      type: "number",
-      required: true,
-      validate: (value) =>
-        Number(value) > 0 ? undefined : "رقم الجلسة يجب أن يكون موجباً.",
-    },
-    { name: "sessionDate", label: "تاريخ الجلسة", type: "date", required: true },
-    {
-      name: "topic",
-      label: "موضوع الجلسة",
-      required: true,
-      placeholder: "مثال: مقدمة في المكوّنات",
-    },
-    {
-      name: "status",
-      label: "الحالة",
-      options: STATUS_OPTIONS,
-      required: true,
+      title: "التوقيت والحالة",
+      description: "تاريخ الجلسة وحالتها في الجدول.",
+      icon: <ClipboardCheck className="h-4 w-4" />,
+      fields: [
+        {
+          name: "sessionDate",
+          label: "تاريخ الجلسة",
+          type: "date",
+          required: true,
+        },
+        {
+          name: "status",
+          label: "الحالة",
+          options: STATUS_OPTIONS,
+          required: true,
+        },
+      ],
     },
   ];
 
@@ -365,7 +393,7 @@ const TeacherSessionsPage = () => {
                     status: "scheduled",
                   }
             }
-            fields={buildFields()}
+            sections={buildSections()}
             columns={2}
             submitLabel={modal.mode === "edit" ? "حفظ" : "إضافة الجلسة"}
             cancelLabel="إلغاء"

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { UserPlus, Mail } from "lucide-react";
+import { UserPlus, Mail, UserRound, KeyRound, GraduationCap } from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
@@ -8,13 +8,11 @@ import Modal from "../../components/common/Modal";
 import Table from "../../components/common/Table";
 import Filter from "../../components/common/Filter";
 import Avatar from "../../components/common/Avatar";
-import Badge, {
-  accountStatusBadge,
-  approvalBadge,
-} from "../../components/common/Badge";
+import { accountStatusBadge, approvalBadge } from "../../components/common/badges";
+import Badge from "../../components/common/Badge";
 import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 import { secretaryApi } from "../../services/secretaryApi";
 import {
   alive,
@@ -67,76 +65,99 @@ const TeachersCrudPage = () => {
     [teachers, search, approvalFilter],
   );
 
-  const fields = [
+  const sections = [
     {
-      name: "fullName",
-      label: "الاسم الكامل",
-      required: true,
-      placeholder: "مثال: أ. منى الزهراني",
+      title: "بيانات المدرب",
+      description: "الاسم والبريد الإلكتروني ورقم التواصل.",
+      icon: <UserRound className="h-4 w-4" />,
+      fields: [
+        {
+          name: "fullName",
+          label: "الاسم الكامل",
+          required: true,
+          placeholder: "مثال: أ. منى الزهراني",
+        },
+        {
+          name: "email",
+          label: "البريد الإلكتروني",
+          type: "email",
+          required: true,
+          placeholder: "name@edums.edu",
+          className: "ltr",
+          validate: (value) => {
+            if (!emailPattern.test(String(value || "").trim()))
+              return "صيغة بريد غير صحيحة.";
+            if (
+              allUsers.some(
+                (record) =>
+                  String(record.email).toLowerCase() ===
+                  String(value).trim().toLowerCase(),
+              )
+            )
+              return "البريد مستخدم بالفعل.";
+            return undefined;
+          },
+        },
+        {
+          name: "phone",
+          label: "رقم الجوال",
+          type: "tel",
+          required: true,
+          placeholder: "05xxxxxxxx",
+          className: "ltr",
+          validate: (value) =>
+            String(value || "").trim().length >= 6
+              ? undefined
+              : "رقم الجوال يجب ألا يقل عن 6 أحرف.",
+        },
+        {
+          name: "birthDate",
+          label: "تاريخ الميلاد",
+          type: "date",
+          required: true,
+        },
+      ],
     },
     {
-      name: "email",
-      label: "البريد الإلكتروني",
-      type: "email",
-      required: true,
-      placeholder: "name@edums.edu",
-      className: "ltr",
-      validate: (value) => {
-        if (!emailPattern.test(String(value || "").trim()))
-          return "صيغة بريد غير صحيحة.";
-        if (
-          allUsers.some(
-            (record) =>
-              String(record.email).toLowerCase() ===
-              String(value).trim().toLowerCase(),
-          )
-        )
-          return "البريد مستخدم بالفعل.";
-        return undefined;
-      },
+      title: "الملف التدريبي",
+      description: "يظهر في بطاقة المدرب وصفحات الدورات.",
+      icon: <GraduationCap className="h-4 w-4" />,
+      fields: [
+        {
+          name: "specialization",
+          label: "التخصص",
+          required: true,
+          placeholder: "مثال: تطوير الواجهات الأمامية",
+          colSpan: 2,
+        },
+        {
+          name: "bio",
+          label: "نبذة تعريفية",
+          type: "textarea",
+          required: true,
+          fullWidth: true,
+          placeholder: "خبرة المدرب وأسلوبه في التدريس…",
+        },
+      ],
     },
     {
-      name: "phone",
-      label: "رقم الجوال",
-      type: "tel",
-      required: true,
-      placeholder: "05xxxxxxxx",
-      className: "ltr",
-      validate: (value) =>
-        String(value || "").trim().length >= 6
-          ? undefined
-          : "رقم الجوال يجب ألا يقل عن 6 أحرف.",
-    },
-    {
-      name: "birthDate",
-      label: "تاريخ الميلاد",
-      type: "date",
-      required: true,
-    },
-    {
-      name: "specialization",
-      label: "التخصص",
-      required: true,
-      placeholder: "مثال: تطوير الواجهات الأمامية",
-    },
-    {
-      name: "password",
-      label: "كلمة المرور المؤقتة",
-      type: "password",
-      required: true,
-      hint: "لا تقل عن 6 أحرف.",
-      validate: (value) =>
-        String(value || "").length < 6
-          ? "كلمة المرور يجب ألا تقل عن 6 أحرف."
-          : undefined,
-    },
-    {
-      name: "bio",
-      label: "نبذة تعريفية",
-      type: "textarea",
-      required: true,
-      fullWidth: true,
-      placeholder: "خبرة المدرب وأسلوبه في التدريس…",
+      title: "حساب الدخول",
+      description: "كلمة مرور مؤقتة يغيّرها المدرب بعد أول دخول.",
+      icon: <KeyRound className="h-4 w-4" />,
+      fields: [
+        {
+          name: "password",
+          label: "كلمة المرور المؤقتة",
+          type: "password",
+          required: true,
+          hint: "لا تقل عن 6 أحرف.",
+          colSpan: 2,
+          validate: (value) =>
+            String(value || "").length < 6
+              ? "كلمة المرور يجب ألا تقل عن 6 أحرف."
+              : undefined,
+        },
+      ],
     },
   ];
 
@@ -278,7 +299,7 @@ const TeachersCrudPage = () => {
       >
         <Form
           key={`create-${formKey}`}
-          fields={fields}
+          sections={sections}
           columns={2}
           submitLabel="إنشاء الطلب"
           cancelLabel="إلغاء"

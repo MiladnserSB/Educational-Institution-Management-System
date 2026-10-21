@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, ArrowLeft } from "lucide-react";
+import { Mail, Lock, ArrowLeft, AlertCircle } from "lucide-react";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Logo from "../../components/common/Logo";
 import { authApi } from "../../services/api";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/auth";
+import { useToast } from "../../context/toast";
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -90,11 +90,20 @@ const LoginPage = () => {
           </div>
 
           <div className="mb-8">
-            <h2 className="text-2xl font-extrabold text-ink">تسجيل الدخول</h2>
+            <h2 className="text-2xl font-extrabold tracking-tight text-ink">
+              تسجيل الدخول
+            </h2>
             <p className="mt-1.5 text-sm text-muted">
               أدخل بياناتك للوصول إلى مساحة العمل
             </p>
           </div>
+
+          {error && (
+            <div className="mb-4 flex items-start gap-2.5 rounded-field border border-error-500/25 bg-error-50 px-3.5 py-3 text-sm text-error-700">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
           <form onSubmit={submit} className="space-y-4" noValidate>
             <Input
@@ -126,6 +135,7 @@ const LoginPage = () => {
               size="lg"
               loading={loading}
               fullWidth
+              className="mt-2"
             >
               <ArrowLeft className="h-4 w-4" />
               دخول

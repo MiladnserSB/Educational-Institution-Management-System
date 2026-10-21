@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { ChevronRight, ChevronLeft } from "lucide-react";
 import {
   classNames,
   createTableColumns,
@@ -13,18 +14,19 @@ const Table = ({
   data = [],
   autoColumns = false,
   rowKey = "id",
-  emptyMessage = "No records found.",
+  emptyMessage = "لا توجد سجلات.",
   loading = false,
   pageSize = 8,
   page: controlledPage,
   onPageChange,
   pagination = true,
   caption,
-  loadingState = "Loading…",
+  loadingState = "جارٍ التحميل…",
   emptyState,
-  previousLabel = "Previous",
-  nextLabel = "Next",
+  previousLabel = "السابق",
+  nextLabel = "التالي",
   onRowClick,
+  dense = false,
   className = "",
   ...props
 }) => {
@@ -62,10 +64,10 @@ const Table = ({
           {caption && (
             <caption className="ui-visually-hidden">{caption}</caption>
           )}
-          <thead>
+          <thead className="ui-table-thead sticky top-0 z-10">
             <tr>
               {resolvedColumns.map((col, index) => (
-                <th key={col.key ?? col.header ?? index} scope="col">
+                <th key={col.key ?? col.header ?? index} scope="col" className="ui-table-th">
                   {col.header}
                 </th>
               ))}
@@ -95,6 +97,7 @@ const Table = ({
               rows.map((row, index) => (
                 <tr
                   key={getTableRowKey(row, rowKey, index)}
+                  className="ui-table-tr"
                   onClick={
                     onRowClick ? () => onRowClick(row, index) : undefined
                   }
@@ -114,7 +117,10 @@ const Table = ({
                   {resolvedColumns.map((col, columnIndex) => {
                     const value = getTableCellValue(col, row, index);
                     return (
-                      <td key={col.key ?? col.header ?? columnIndex}>
+                      <td
+                        key={col.key ?? col.header ?? columnIndex}
+                        className={dense ? "ui-table-td !py-2.5" : "ui-table-td"}
+                      >
                         {col.render
                           ? col.render(value, row, index)
                           : (value ?? "—")}
@@ -127,26 +133,31 @@ const Table = ({
           </tbody>
         </table>
       </div>
+
       {pagination && data.length > effectivePageSize && (
         <div className="ui-table-pagination">
           <span>
-            Showing {startIndex + 1}–{endIndex} of {data.length}
+            عرض {startIndex + 1}–{endIndex} من {data.length}
           </span>
           <div>
             <button
+              type="button"
               disabled={!hasPrevious}
               onClick={() => changePage(safePage - 1)}
+              aria-label={previousLabel}
             >
-              {previousLabel}
+              <ChevronRight className="h-4 w-4" />
             </button>
-            <span>
+            <span className="px-1.5 tabular-nums">
               {safePage} / {totalPages}
             </span>
             <button
+              type="button"
               disabled={!hasNext}
               onClick={() => changePage(safePage + 1)}
+              aria-label={nextLabel}
             >
-              {nextLabel}
+              <ChevronLeft className="h-4 w-4" />
             </button>
           </div>
         </div>

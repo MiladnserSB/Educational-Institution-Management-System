@@ -1,6 +1,15 @@
 import { forwardRef, useId } from "react";
+import { AlertCircle } from "lucide-react";
 import { classNames, normalizeOptions } from "../../utils";
 
+/**
+ * Text field.
+ *
+ *   <Input label="البريد" type="email" required error="…" hint="…" />
+ *
+ * `as` selects the element (input | textarea | select). `icon` renders a
+ * leading glyph, `suffix` a trailing one.
+ */
 const Input = forwardRef(function Input(
   {
     label,
@@ -8,12 +17,17 @@ const Input = forwardRef(function Input(
     name,
     error,
     hint,
+    description,
     prefix,
     suffix,
+    icon,
     className = "",
     wrapperClassName = "",
     as = "input",
     options = [],
+    size = "md",
+    rows = 4,
+    required = false,
     ...props
   },
   ref,
@@ -21,43 +35,73 @@ const Input = forwardRef(function Input(
   const generatedId = useId();
   const fieldId = id || name || generatedId;
   const { "aria-describedby": externalDescribedBy, ...inputProps } = props;
+
+  const hintId = `${fieldId}-hint`;
+  const errorId = `${fieldId}-error`;
+  const descriptionId = `${fieldId}-description`;
+
   const describedBy =
     [
       externalDescribedBy,
-      error && `${fieldId}-error`,
-      !error && hint && `${fieldId}-hint`,
+      error ? errorId : null,
+      !error && description ? descriptionId : null,
+      !error && !description && hint ? hintId : null,
     ]
       .filter(Boolean)
       .join(" ") || undefined;
+
   const common = {
     id: fieldId,
     name,
-    "aria-invalid": Boolean(error),
+    required: required || undefined,
+    "aria-invalid": Boolean(error) || undefined,
     "aria-describedby": describedBy,
-    className: classNames("ui-input", error && "ui-input--error", className),
+    className: classNames(
+      "ui-input",
+      `ui-input--${size}`,
+      error && "ui-input--error",
+      className,
+    ),
     ref,
     ...inputProps,
   };
+
+  const hasAffix = Boolean(prefix || suffix || icon);
+  // A single leading slot: an explicit `icon` wins over a `prefix` glyph.
+  const leading = icon || prefix;
+
   return (
     <div className={classNames("ui-field", wrapperClassName)}>
       {label && (
         <label className="ui-label" htmlFor={fieldId}>
           {label}
-          {props.required && <span className="ui-required"> *</span>}
+          {required && (
+            <span className="ui-required" aria-hidden="true">
+              *
+            </span>
+          )}
         </label>
       )}
+
+      {description && (
+        <p id={descriptionId} className="mb-1.5 text-xs leading-relaxed text-muted">
+          {description}
+        </p>
+      )}
+
       <div
         className={classNames(
           "ui-input-wrap",
-          (prefix || suffix) && "ui-input-wrap--affix",
+          hasAffix && "ui-input-wrap--affix",
         )}
       >
-        {prefix && <span className="ui-input-affix">{prefix}</span>}
+        {leading && <span className="ui-input-affix">{leading}</span>}
+
         {as === "select" ? (
           <select {...common}>
             {normalizeOptions(options).map((option, index) => (
               <option
-                key={option.value || `${option.label}-${index}`}
+                key={option.value ?? `${option.label}-${index}`}
                 value={option.value}
               >
                 {option.label}
@@ -65,22 +109,24 @@ const Input = forwardRef(function Input(
             ))}
           </select>
         ) : as === "textarea" ? (
-          <textarea {...common} />
+          <textarea {...common} rows={rows} />
         ) : (
           <input {...common} />
         )}
+
         {suffix && <span className="ui-input-affix">{suffix}</span>}
       </div>
-      {error && (
-        <p className="ui-field-error" id={`${fieldId}-error`}>
+
+      {error ? (
+        <p id={errorId} className="ui-field-error">
+          <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           {error}
         </p>
-      )}
-      {!error && hint && (
-        <p className="ui-field-hint" id={`${fieldId}-hint`}>
+      ) : hint ? (
+        <p id={hintId} className="ui-field-hint">
           {hint}
         </p>
-      )}
+      ) : null}
     </div>
   );
 });

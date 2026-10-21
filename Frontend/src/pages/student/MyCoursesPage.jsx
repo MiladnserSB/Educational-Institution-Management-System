@@ -7,10 +7,8 @@ import Modal from "../../components/common/Modal";
 import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import Avatar from "../../components/common/Avatar";
-import Badge, {
-  cohortStatusBadge,
-  sessionStatusBadge,
-} from "../../components/common/Badge";
+import { cohortStatusBadge, sessionStatusBadge } from "../../components/common/badges";
+import Badge from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
 import { studentApi } from "../../services/studentApi";
 import { formatDate, levelsByCourse } from "../../utils";
@@ -120,7 +118,7 @@ const MyCoursesPage = () => {
     <div className="space-y-6">
       <PageHeader title="دوراتي" description="دوراتك المسجّل فيها والدورات المتاحة" />
 
-      <div className="w-fit rounded-xl border border-border bg-white p-1">
+      <div className="w-fit rounded-card border border-border bg-white p-1">
         <button onClick={() => setTab("learning")} className={tabClass(tab === "learning")}>
           <BookOpen className="h-4 w-4" /> دوراتي
         </button>
@@ -157,7 +155,7 @@ const MyCoursesPage = () => {
               return (
                 <Card
                   key={enrollment.enrollmentId}
-                  className="transition hover:shadow-cardLg hover:border-muted/30"
+                  className="transition hover:shadow-card-lg hover:border-muted/30"
                 >
                   <CourseCardBody
                     course={course || fallback}
@@ -178,7 +176,7 @@ const MyCoursesPage = () => {
           {approvedCourses.map((course) => (
             <Card
               key={course.id}
-              className="cursor-pointer transition hover:shadow-cardLg hover:border-muted/30"
+              className="cursor-pointer transition hover:shadow-card-lg hover:border-muted/30"
               onClick={() => setDetailCourse(course)}
             >
               <CourseCardBody course={course} enrollment={null} />

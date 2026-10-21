@@ -5,6 +5,8 @@ import {
   BookOpen,
   ClipboardCheck,
   FileText,
+  UserRound,
+  KeyRound,
 } from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
@@ -14,14 +16,12 @@ import Modal from "../../components/common/Modal";
 import Table from "../../components/common/Table";
 import Filter from "../../components/common/Filter";
 import Avatar from "../../components/common/Avatar";
-import Badge, {
-  accountStatusBadge,
-  enrollmentStatusBadge,
-} from "../../components/common/Badge";
+import { accountStatusBadge, enrollmentStatusBadge } from "../../components/common/badges";
+import Badge from "../../components/common/Badge";
 import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 import { secretaryApi } from "../../services/secretaryApi";
 import {
   alive,
@@ -82,69 +82,91 @@ const StudentsCrudPage = () => {
     [students, search, statusFilter],
   );
 
-  const fields = [
+  const sections = [
     {
-      name: "fullName",
-      label: "الاسم الكامل",
-      required: true,
-      placeholder: "مثال: عبدالرحمن السالم",
+      title: "بيانات الطالب",
+      description: "الاسم والبريد الإلكتروني ورقم التواصل.",
+      icon: <UserRound className="h-4 w-4" />,
+      fields: [
+        {
+          name: "fullName",
+          label: "الاسم الكامل",
+          required: true,
+          placeholder: "مثال: عبدالرحمن السالم",
+        },
+        {
+          name: "email",
+          label: "البريد الإلكتروني",
+          type: "email",
+          required: true,
+          placeholder: "name@edums.edu",
+          className: "ltr",
+          validate: (value) => {
+            if (!emailPattern.test(String(value || "").trim()))
+              return "صيغة بريد غير صحيحة.";
+            if (
+              allUsers.some(
+                (record) =>
+                  String(record.email).toLowerCase() ===
+                  String(value).trim().toLowerCase(),
+              )
+            )
+              return "البريد مستخدم بالفعل.";
+            return undefined;
+          },
+        },
+        {
+          name: "phone",
+          label: "رقم الجوال",
+          type: "tel",
+          required: true,
+          placeholder: "05xxxxxxxx",
+          className: "ltr",
+          validate: (value) =>
+            String(value || "").trim().length >= 6
+              ? undefined
+              : "رقم الجوال يجب ألا يقل عن 6 أحرف.",
+        },
+        {
+          name: "birthDate",
+          label: "تاريخ الميلاد",
+          type: "date",
+          required: true,
+        },
+      ],
     },
     {
-      name: "email",
-      label: "البريد الإلكتروني",
-      type: "email",
-      required: true,
-      placeholder: "name@edums.edu",
-      className: "ltr",
-      validate: (value) => {
-        if (!emailPattern.test(String(value || "").trim()))
-          return "صيغة بريد غير صحيحة.";
-        if (
-          allUsers.some(
-            (record) =>
-              String(record.email).toLowerCase() ===
-              String(value).trim().toLowerCase(),
-          )
-        )
-          return "البريد مستخدم بالفعل.";
-        return undefined;
-      },
+      title: "المسار الدراسي",
+      description: "يظهر في ملف الطالب ويُعرض في صفحة الدورات.",
+      icon: <BookOpen className="h-4 w-4" />,
+      fields: [
+        {
+          name: "study",
+          label: "المسار الدراسي",
+          required: true,
+          placeholder: "مثال: ثانوي — علمي",
+          colSpan: 2,
+        },
+      ],
     },
     {
-      name: "phone",
-      label: "رقم الجوال",
-      type: "tel",
-      required: true,
-      placeholder: "05xxxxxxxx",
-      className: "ltr",
-      validate: (value) =>
-        String(value || "").trim().length >= 6
-          ? undefined
-          : "رقم الجوال يجب ألا يقل عن 6 أحرف.",
-    },
-    {
-      name: "birthDate",
-      label: "تاريخ الميلاد",
-      type: "date",
-      required: true,
-    },
-    {
-      name: "study",
-      label: "المسار الدراسي",
-      required: true,
-      placeholder: "مثال: ثانوي — علمي",
-      fullWidth: true,
-    },
-    {
-      name: "password",
-      label: "كلمة المرور المؤقتة",
-      type: "password",
-      required: true,
-      hint: "لا تقل عن 6 أحرف.",
-      validate: (value) =>
-        String(value || "").length < 6
-          ? "كلمة المرور يجب ألا تقل عن 6 أحرف."
-          : undefined,
+      title: "حساب الدخول",
+      description: "كلمة مرور مؤقتة يغيّرها الطالب بعد أول دخول.",
+      icon: <KeyRound className="h-4 w-4" />,
+      fields: [
+        {
+          name: "password",
+          label: "كلمة المرور المؤقتة",
+          type: "password",
+          required: true,
+          hint: "لا تقل عن 6 أحرف.",
+          colSpan: 2,
+          validate: (value) =>
+            String(value || "").length < 6
+              ? "كلمة المرور يجب ألا تقل عن 6 أحرف."
+              : undefined,
+        },
+      ],
     },
   ];
 
@@ -310,7 +332,7 @@ const StudentsCrudPage = () => {
       >
         <Form
           key={`create-${formKey}`}
-          fields={fields}
+          sections={sections}
           columns={2}
           submitLabel="حفظ الطالب"
           cancelLabel="إلغاء"

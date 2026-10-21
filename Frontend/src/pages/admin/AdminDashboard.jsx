@@ -14,10 +14,10 @@ import StatCard from "../../components/common/StatCard";
 import EmptyState from "../../components/common/EmptyState";
 import Avatar from "../../components/common/Avatar";
 import Spinner from "../../components/common/Spinner";
-import { approvalBadge, accountStatusBadge } from "../../components/common/Badge";
+import { approvalBadge, accountStatusBadge } from "../../components/common/badges";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/auth";
+import { useToast } from "../../context/toast";
 import { adminApi } from "../../services/adminApi";
 import { alive, formatDate, usersByRole } from "../../utils";
 

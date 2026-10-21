@@ -14,9 +14,9 @@ import PageHeader from "../../components/common/PageHeader";
 import StatCard from "../../components/common/StatCard";
 import Spinner from "../../components/common/Spinner";
 import EmptyState from "../../components/common/EmptyState";
-import { sessionStatusBadge } from "../../components/common/Badge";
+import { sessionStatusBadge } from "../../components/common/badges";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import { teacherApi } from "../../services/teacherApi";
 import {
   alive,

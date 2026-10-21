@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ClipboardCheck, Save, CheckCircle2, CalendarDays } from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
@@ -9,8 +9,8 @@ import Spinner from "../../components/common/Spinner";
 import StatCard from "../../components/common/StatCard";
 import Badge from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/auth";
+import { useToast } from "../../context/toast";
 import { teacherApi } from "../../services/teacherApi";
 import {
   attendanceBySession,
@@ -36,7 +36,6 @@ const AttendancePage = () => {
 
   const [cohortId, setCohortId] = useState("");
   const [sessionId, setSessionId] = useState("");
-  const [marks, setMarks] = useState({});
   const [saving, setSaving] = useState(false);
 
   const cohortsResult = useFetch(() => teacherApi.cohorts.list(), []);
@@ -95,18 +94,24 @@ const AttendancePage = () => {
     () => (sessionId ? attendanceBySession(attendance, sessionId) : []),
     [attendance, sessionId],
   );
-  // Pre-fill marks from stored records whenever the session changes.
-  useEffect(() => {
-    if (!sessionId) {
-      setMarks({});
-      return;
-    }
+
+  // Pre-fill the marks from the stored records. Done during render (not in an
+  // effect) so the form never shows a stale session's marks for a frame.
+  const marksFromRecords = useMemo(() => {
+    if (!sessionId) return {};
     const initial = {};
     existing.forEach((record) => {
       initial[record.enrollmentId] = record.status;
     });
-    setMarks(initial);
+    return initial;
   }, [sessionId, existing]);
+
+  const [marksSource, setMarksSource] = useState(marksFromRecords);
+  const [marks, setMarks] = useState(marksFromRecords);
+  if (marksSource !== marksFromRecords) {
+    setMarksSource(marksFromRecords);
+    setMarks(marksFromRecords);
+  }
 
   const currentSession = sessions.find((record) => record.id === sessionId);
   const currentCohort = myCohorts.find((record) => record.id === cohortId);

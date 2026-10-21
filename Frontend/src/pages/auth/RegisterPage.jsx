@@ -5,7 +5,7 @@ import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 import Logo from "../../components/common/Logo";
 import { authApi } from "../../services/api";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 
 const RegisterPage = () => {
   const { login } = useAuth();

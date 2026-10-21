@@ -3,16 +3,15 @@ import { Plus, NotebookPen } from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
-import Form from "../../components/common/Form";
-import Modal from "../../components/common/Modal";
+import NoteComposer from "../../components/common/NoteComposer";
 import Filter from "../../components/common/Filter";
 import Avatar from "../../components/common/Avatar";
 import EmptyState from "../../components/common/EmptyState";
 import Badge from "../../components/common/Badge";
 import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/auth";
+import { useToast } from "../../context/toast";
 import { teacherApi } from "../../services/teacherApi";
 import {
   canSeeNote,
@@ -46,20 +45,8 @@ const TeacherNotesPage = () => {
 
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
-  const [formKey, setFormKey] = useState(0);
 
   const students = useMemo(() => usersByRole(allUsers, "student"), [allUsers]);
-
-  const studentOptions = useMemo(
-    () => [
-      { value: "", label: "اختر الطالب" },
-      ...students.map((student) => ({
-        value: student.id,
-        label: student.fullName,
-      })),
-    ],
-    [students],
-  );
 
   const myNotes = useMemo(
     () =>
@@ -93,7 +80,6 @@ const TeacherNotesPage = () => {
       });
       toast("success", "تم حفظ الملاحظة بنجاح.");
       setAddOpen(false);
-      setFormKey((key) => key + 1);
       reload();
     } catch (error) {
       toast("error", error.message);
@@ -108,7 +94,6 @@ const TeacherNotesPage = () => {
         action={
           <Button
             onClick={() => {
-              setFormKey((key) => key + 1);
               setAddOpen(true);
             }}
           >
@@ -182,48 +167,14 @@ const TeacherNotesPage = () => {
         </div>
       )}
 
-      <Modal
+      <NoteComposer
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        title="إضافة ملاحظة"
-        description="اختر الطالب وحدّد من يمكنه رؤية الملاحظة."
-      >
-        <Form
-          key={`create-${formKey}`}
-          initialValues={{ visibility: "teacherOnly" }}
-          fields={[
-            {
-              name: "studentId",
-              label: "الطالب",
-              options: studentOptions,
-              required: true,
-            },
-            {
-              name: "visibility",
-              label: "مستوى الظهور",
-              options: VISIBILITY_OPTIONS,
-              required: true,
-            },
-            {
-              name: "note",
-              label: "نص الملاحظة",
-              type: "textarea",
-              required: true,
-              fullWidth: true,
-              placeholder: "اكتب الملاحظة…",
-              validate: (value) =>
-                String(value || "").trim().length < 3
-                  ? "نص الملاحظة قصير جداً."
-                  : undefined,
-            },
-          ]}
-          columns={2}
-          submitLabel="حفظ الملاحظة"
-          cancelLabel="إلغاء"
-          onCancel={() => setAddOpen(false)}
-          onSubmit={submitCreate}
-        />
-      </Modal>
+        onSubmit={submitCreate}
+        students={students}
+        visibilityOptions={VISIBILITY_OPTIONS}
+        defaultVisibility="teacherOnly"
+      />
     </div>
   );
 };

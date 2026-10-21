@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
-import { FileText, Pencil, Save } from "lucide-react";
+import { FileText, Pencil, NotebookPen } from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
+import Form from "../../components/common/Form";
 import Input from "../../components/common/Input";
 import Modal from "../../components/common/Modal";
 import Avatar from "../../components/common/Avatar";
@@ -10,8 +11,8 @@ import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import Badge from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
-import { useToast } from "../../context/ToastContext";
+import { useAuth } from "../../context/auth";
+import { useToast } from "../../context/toast";
 import { teacherApi } from "../../services/teacherApi";
 import {
   alive,
@@ -50,8 +51,7 @@ const GradesPage = () => {
   const [cohortId, setCohortId] = useState("");
   const [target, setTarget] = useState(null); // enrollment being graded
   const [form, setForm] = useState({ score: "", maxScore: "100", notes: "" });
-  const [formError, setFormError] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [liveValues, setLiveValues] = useState({});
 
   const myCohorts = useMemo(
     () => cohortsByTeacher(cohorts, user?.id),
@@ -66,7 +66,6 @@ const GradesPage = () => {
   const openEditor = (enrollment) => {
     const existing = resultByEnrollment(results, enrollment.id);
     setTarget(enrollment);
-    setFormError("");
     setForm({
       score: existing?.score != null ? String(existing.score) : "",
       maxScore: existing?.maxScore != null ? String(existing.maxScore) : "100",
@@ -74,33 +73,30 @@ const GradesPage = () => {
     });
   };
 
-  const previewPct = percentage(form.score, form.maxScore);
-
-  const submit = async () => {
+  const submit = async (values) => {
     if (!target) return;
-    const score = Number(form.score);
-    const maxScore = Number(form.maxScore);
-    if (form.score === "" || Number.isNaN(score)) {
-      setFormError("أدخل الدرجة المحصّلة.");
+    const score = Number(values.score);
+    const maxScore = Number(values.maxScore);
+    if (values.score === "" || Number.isNaN(score)) {
+      toast("error", "أدخل الدرجة المحصّلة.");
       return;
     }
     if (!maxScore || maxScore <= 0) {
-      setFormError("الدرجة العظمى يجب أن تكون موجبة.");
+      toast("error", "الدرجة العظمى يجب أن تكون موجبة.");
       return;
     }
     if (score < 0 || score > maxScore) {
-      setFormError("الدرجة يجب أن تكون بين صفر والدرجة العظمى.");
+      toast("error", "الدرجة يجب أن تكون بين صفر والدرجة العظمى.");
       return;
     }
     // The backend schema marks `notes` as required, so an empty string
     // would be rejected with a 500 — validate it before sending.
-    const notes = String(form.notes || "").trim();
+    const notes = String(values.notes || "").trim();
     if (!notes) {
-      setFormError("ملاحظات الدرجة مطلوبة.");
+      toast("error", "ملاحظات الدرجة مطلوبة.");
       return;
     }
 
-    setSaving(true);
     try {
       const payload = {
         enrollmentId: target.id,
@@ -121,8 +117,6 @@ const GradesPage = () => {
       reloadResults();
     } catch (error) {
       toast("error", error.message);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -258,74 +252,97 @@ const GradesPage = () => {
             ? byId(allUsers, target.studentId)?.fullName || ""
             : ""
         }
+        size="md"
       >
         {target && (
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input
-                label="الدرجة المحصّلة"
-                type="number"
-                min="0"
-                value={form.score}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    score: event.target.value,
-                  }))
-                }
-                error={formError || undefined}
-              />
-              <Input
-                label="الدرجة العظمى"
-                type="number"
-                min="1"
-                value={form.maxScore}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    maxScore: event.target.value,
-                  }))
-                }
-              />
-            </div>
-
-            <div className="flex items-center justify-between rounded-lg border border-border bg-canvas/60 px-4 py-3 text-sm">
-              <span className="text-muted">النسبة المئوية</span>
-              <span className="ltr font-semibold text-ink">
-                {form.score !== "" ? `${previewPct}%` : "—"}
-              </span>
-            </div>
-            <div className="flex items-center justify-between rounded-lg border border-border bg-canvas/60 px-4 py-3 text-sm">
-              <span className="text-muted">التقدير</span>
-              <span className="font-semibold text-brand-blue">
-                {form.score !== "" ? gradeFromPct(previewPct) : "—"}
-              </span>
-            </div>
-
-            <Input
-              label="ملاحظات وتغذية راجعة"
-              as="textarea"
-              required
-              placeholder="اكتب ملاحظة على الدرجة…"
-              value={form.notes}
-              onChange={(event) =>
-                setForm((current) => ({
-                  ...current,
-                  notes: event.target.value,
-                }))
-              }
-            />
-
-            <div className="flex justify-end gap-2 pt-1">
-              <Button variant="outline" onClick={() => setTarget(null)}>
-                إلغاء
-              </Button>
-              <Button variant="primary" loading={saving} onClick={submit}>
-                <Save className="h-4 w-4" />
-                حفظ الدرجة
-              </Button>
-            </div>
-          </div>
+          <Form
+            key={target.id}
+            sections={[
+              {
+                title: "الدرجة",
+                description: "الدرجة المحصّلة من الدرجة العظمى.",
+                icon: <FileText className="h-4 w-4" />,
+                fields: [
+                  {
+                    name: "score",
+                    label: "الدرجة المحصّلة",
+                    type: "number",
+                    min: 0,
+                    required: true,
+                    className: "ltr",
+                    render: ({ value, error, onChange }) => {
+                      const max = Number(
+                        liveValues.maxScore ?? form.maxScore ?? 100,
+                      );
+                      const pct = percentage(value, max);
+                      return (
+                        <div>
+                          <Input
+                            type="number"
+                            min={0}
+                            required
+                            className="ltr"
+                            value={value}
+                            onChange={(event) =>
+                              onChange(event.target.value)
+                            }
+                            error={error}
+                          />
+                          {value !== "" && !error && (
+                            <div className="mt-2 flex items-center justify-between rounded-lg bg-brand-blue-soft px-3 py-2 text-xs">
+                              <span className="text-muted">
+                                النسبة المئوية
+                              </span>
+                              <span className="ltr font-bold text-brand-blue">
+                                {pct}%
+                              </span>
+                              <span className="font-semibold text-brand-blue">
+                                {gradeFromPct(pct)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    },
+                  },
+                  {
+                    name: "maxScore",
+                    label: "الدرجة العظمى",
+                    type: "number",
+                    min: 1,
+                    required: true,
+                    className: "ltr",
+                  },
+                ],
+              },
+              {
+                title: "التغذية الراجعة",
+                description: "ملاحظة تظهر للطالب مع النتيجة.",
+                icon: <NotebookPen className="h-4 w-4" />,
+                fields: [
+                  {
+                    name: "notes",
+                    label: "ملاحظات وتغذية راجعة",
+                    as: "textarea",
+                    required: true,
+                    colSpan: 2,
+                    placeholder: "اكتب ملاحظة على الدرجة…",
+                  },
+                ],
+              },
+            ]}
+            initialValues={{
+              score: form.score,
+              maxScore: form.maxScore,
+              notes: form.notes,
+            }}
+            onValuesChange={setLiveValues}
+            columns={2}
+            submitLabel="حفظ الدرجة"
+            cancelLabel="إلغاء"
+            onCancel={() => setTarget(null)}
+            onSubmit={submit}
+          />
         )}
       </Modal>
     </div>

@@ -10,10 +10,11 @@ import Table from "../../components/common/Table";
 import Filter from "../../components/common/Filter";
 import Avatar from "../../components/common/Avatar";
 import EmptyState from "../../components/common/EmptyState";
-import Badge, { cohortStatusBadge } from "../../components/common/Badge";
+import { cohortStatusBadge } from "../../components/common/badges";
+import Badge from "../../components/common/Badge";
 import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 import { secretaryApi } from "../../services/secretaryApi";
 import { alive, byId, cohortEnrollmentCount, formatDate, levelsByCourse, sessionsByCohort, usersByRole } from "../../utils";
 import { enrollmentsByCohort } from "../../utils/selectors";
@@ -100,50 +101,82 @@ const CohortsPage = () => {
     [cohorts, statusFilter, search, levels, courses],
   );
 
-  const buildFields = (target) => {
+  const buildSections = (target) => {
     const teacherInOptions =
       !target?.teacherId || teachers.some((t) => t.id === target.teacherId);
     return [
       {
-        name: "code",
-        label: "رمز الدفعة",
-        required: true,
-        placeholder: "مثال: C-2026-01",
-        className: "ltr",
+        title: "هوية الدفعة",
+        description: "رمز مميز(level) وحالة الدفعة.",
+        icon: <Layers className="h-4 w-4" />,
+        fields: [
+          {
+            name: "code",
+            label: "رمز الدفعة",
+            required: true,
+            placeholder: "مثال: C-2026-01",
+            className: "ltr",
+          },
+          {
+            name: "status",
+            label: "الحالة",
+            options: STATUS_OPTIONS,
+            required: true,
+          },
+        ],
       },
       {
-        name: "status",
-        label: "الحالة",
-        options: STATUS_OPTIONS,
-        required: true,
+        title: "الربط",
+        description: "المستوى الذي تتبعه الدفعة والمدرب المسؤول.",
+        icon: <Users className="h-4 w-4" />,
+        fields: [
+          {
+            name: "levelId",
+            label: "المستوى",
+            options: levelOptions,
+            required: true,
+          },
+          {
+            name: "teacherId",
+            label: "المدرب",
+            options: teacherInOptions
+              ? teacherOptions
+              : [
+                  { value: "", label: "اختر المدرب" },
+                  ...teachers.map((t) => ({ value: t.id, label: t.fullName })),
+                  { value: target?.teacherId, label: "المدرب الحالي" },
+                ],
+            required: true,
+          },
+        ],
       },
       {
-        name: "levelId",
-        label: "المستوى",
-        options: levelOptions,
-        required: true,
-      },
-      {
-        name: "teacherId",
-        label: "المدرب",
-        options: teacherInOptions
-          ? teacherOptions
-          : [
-              { value: "", label: "اختر المدرب" },
-              ...teachers.map((t) => ({ value: t.id, label: t.fullName })),
-              { value: target?.teacherId, label: "المدرب الحالي" },
-            ],
-        required: true,
-      },
-      { name: "startDate", label: "تاريخ البداية", type: "date", required: true },
-      { name: "endDate", label: "تاريخ النهاية", type: "date", required: true },
-      {
-        name: "capacity",
-        label: "السعة",
-        type: "number",
-        required: true,
-        validate: (value) =>
-          Number(value) > 0 ? undefined : "السعة يجب أن تكون موجبة.",
+        title: "المدة والسعة",
+        description: "الفترة الزمنية وعدد المقاعد المتاحة.",
+        icon: <CalendarDays className="h-4 w-4" />,
+        fields: [
+          {
+            name: "startDate",
+            label: "تاريخ البداية",
+            type: "date",
+            required: true,
+          },
+          {
+            name: "endDate",
+            label: "تاريخ النهاية",
+            type: "date",
+            required: true,
+          },
+          {
+            name: "capacity",
+            label: "السعة",
+            type: "number",
+            required: true,
+            colSpan: 2,
+            validate: (value) =>
+              Number(value) > 0 ? undefined : "السعة يجب أن تكون موجبة.",
+          },
+        ],
       },
     ];
   };
@@ -355,7 +388,7 @@ const CohortsPage = () => {
         <Form
           key={`create-${formKey}`}
           initialValues={{ status: "planned" }}
-          fields={buildFields(null)}
+          sections={buildSections(null)}
           columns={2}
           submitLabel="إنشاء الدفعة"
           cancelLabel="إلغاء"
@@ -383,7 +416,7 @@ const CohortsPage = () => {
               endDate: String(editTarget.endDate || "").slice(0, 10),
               capacity: editTarget.capacity ?? "",
             }}
-            fields={buildFields(editTarget)}
+            sections={buildSections(editTarget)}
             columns={2}
             submitLabel="حفظ"
             cancelLabel="إلغاء"
