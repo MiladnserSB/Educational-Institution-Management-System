@@ -12,60 +12,37 @@ import Badge, {
   sessionStatusBadge,
 } from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
-import {
-  cohortsApi,
-  levelsApi,
-  coursesApi,
-  usersApi,
-  enrollmentsApi,
-  sessionsApi,
-} from "../../services/api";
-import {
-  alive,
-  byId,
-  enrollmentsByStudent,
-  formatDate,
-  levelsByCourse,
-  sessionsByCohort,
-} from "../../utils";
+import { studentApi } from "../../services/studentApi";
+import { formatDate, levelsByCourse } from "../../utils";
 
 const MyCoursesPage = () => {
-  const { user } = useAuth();
+  // GET /api/student/cohorts -> one row per enrollment with the cohort info.
+  const cohortsResult = useFetch(() => studentApi.cohorts.list(), []);
+  // GET /api/student/catalog -> the approved courses and their levels.
+  const catalogResult = useFetch(() => studentApi.catalog.get(), []);
 
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
-  const usersResult = useFetch(() => usersApi.list(), []);
-  const enrollmentsResult = useFetch(() => enrollmentsApi.list(), []);
-  const sessionsResult = useFetch(() => sessionsApi.list(), []);
+  const { data: myEnrollments, loading: enrollmentsLoading } = cohortsResult;
+  const catalogLoading = catalogResult.loading;
 
-  const loading =
-    cohortsResult.loading ||
-    levelsResult.loading ||
-    coursesResult.loading ||
-    enrollmentsResult.loading;
-
-  const cohorts = cohortsResult.data.filter(alive);
-  const levels = levelsResult.data.filter(alive);
-  const courses = coursesResult.data.filter(alive);
-  const allUsers = usersResult.data;
-  const enrollments = enrollmentsResult.data.filter(alive);
-  const sessions = sessionsResult.data.filter(alive);
+  const courses = useMemo(
+    () => catalogResult.single?.courses ?? [],
+    [catalogResult.single],
+  );
+  const levels = useMemo(
+    () => catalogResult.single?.levels ?? [],
+    [catalogResult.single],
+  );
 
   const [tab, setTab] = useState("learning");
   const [detailCourse, setDetailCourse] = useState(null);
 
-  const myEnrollments = useMemo(
-    () => enrollmentsByStudent(enrollments, user?.id),
-    [enrollments, user],
-  );
-  const activeEnrollments = myEnrollments.filter(
-    (enrollment) => enrollment.status === "active",
+  const activeEnrollments = useMemo(
+    () => myEnrollments.filter((row) => row.status !== "withdrawn"),
+    [myEnrollments],
   );
 
   const approvedCourses = useMemo(
-    () => courses.filter((course) => course.isActive && !course.deletedAt),
+    () => courses.filter((course) => course.isActive !== false),
     [courses],
   );
 
@@ -76,17 +53,10 @@ const MyCoursesPage = () => {
 
   const CourseCardBody = ({ course, enrollment }) => {
     const courseLevels = levelsByCourse(levels, course.id);
-    const myLevel = enrollment
-      ? levels.find(
-          (level) =>
-            level.id ===
-            byId(cohorts, enrollment.cohorttId)?.levelId,
-        )
-      : undefined;
-    const cohort = enrollment
-      ? byId(cohorts, enrollment.cohorttId)
-      : undefined;
-    const teacher = cohort ? byId(allUsers, cohort.teacherId) : undefined;
+    const teacherName = enrollment?.teacherName;
+    const levelTitle =
+      enrollment?.levelTitle ||
+      courseLevels.find((level) => level.id === enrollment?.levelId)?.title;
 
     return (
       <>
@@ -106,29 +76,33 @@ const MyCoursesPage = () => {
             <div className="flex items-center justify-between">
               <span>الدفعة</span>
               <span className="ltr font-medium text-ink">
-                {cohort?.code || "—"}
+                {enrollment.code || "—"}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span>المستوى</span>
-              <span className="font-medium text-ink">
-                {myLevel?.title || "—"}
-              </span>
+              <span className="font-medium text-ink">{levelTitle || "—"}</span>
             </div>
-            {teacher && (
+            {teacherName && (
               <div className="flex items-center justify-between">
                 <span>المدرب</span>
                 <span className="flex items-center gap-1.5 font-medium text-ink">
                   <Avatar
-                    name={teacher.fullName}
-                    seed={teacher.id}
+                    name={teacherName}
+                    seed={enrollment.teacherId || teacherName}
                     size="sm"
                     className="h-5 w-5 text-[9px]"
                   />
-                  {teacher.fullName}
+                  {teacherName}
                 </span>
               </div>
             )}
+            <div className="flex items-center justify-between">
+              <span>الجلسات</span>
+              <span className="font-medium text-ink">
+                {enrollment.sessionsDone}/{enrollment.sessionsTotal}
+              </span>
+            </div>
           </div>
         ) : (
           <p className="mt-3 border-t border-border pt-3 text-xs text-muted">
@@ -139,7 +113,8 @@ const MyCoursesPage = () => {
     );
   };
 
-  if (loading) return <Spinner label="جارٍ تحميل الدورات…" />;
+  if (enrollmentsLoading || catalogLoading)
+    return <Spinner label="جارٍ تحميل الدورات…" />;
 
   return (
     <div className="space-y-6">
@@ -170,16 +145,24 @@ const MyCoursesPage = () => {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {activeEnrollments.map((enrollment) => {
-              const cohort = byId(cohorts, enrollment.cohorttId);
-              const level = cohort ? byId(levels, cohort.levelId) : undefined;
-              const course = level ? byId(courses, level.courseId) : undefined;
-              if (!course) return null;
+              const course = courses.find(
+                (record) => record.id === enrollment.courseId,
+              );
+              const fallback = {
+                id: enrollment.courseId,
+                name: enrollment.courseName || "دورة",
+                description: "",
+                isActive: true,
+              };
               return (
                 <Card
-                  key={enrollment.id}
+                  key={enrollment.enrollmentId}
                   className="transition hover:shadow-cardLg hover:border-muted/30"
                 >
-                  <CourseCardBody course={course} enrollment={enrollment} />
+                  <CourseCardBody
+                    course={course || fallback}
+                    enrollment={enrollment}
+                  />
                 </Card>
               );
             })}
@@ -216,9 +199,7 @@ const MyCoursesPage = () => {
           <CourseDetailBody
             course={detailCourse}
             levels={levels}
-            cohorts={cohorts}
-            sessions={sessions}
-            users={allUsers}
+            enrollments={activeEnrollments}
           />
         )}
       </Modal>
@@ -226,22 +207,11 @@ const MyCoursesPage = () => {
   );
 };
 
-const CourseDetailBody = ({ course, levels, cohorts, sessions, users }) => {
+const CourseDetailBody = ({ course, levels, enrollments }) => {
   const courseLevels = levelsByCourse(levels, course.id);
-  const levelIds = new Set(courseLevels.map((level) => level.id));
-  const courseCohorts = cohorts.filter((cohort) =>
-    levelIds.has(cohort.levelId),
+  const myCohorts = enrollments.filter(
+    (row) => row.courseId === course.id,
   );
-  const cohortIds = new Set(courseCohorts.map((cohort) => cohort.id));
-  const courseSessions = sessions.filter((session) =>
-    cohortIds.has(session.cohortId),
-  );
-  const upcoming = courseSessions
-    .filter((session) => session.status === "scheduled")
-    .sort((a, b) =>
-      String(a.sessionDate || "").localeCompare(String(b.sessionDate || "")),
-    )
-    .slice(0, 5);
 
   return (
     <div className="space-y-5">
@@ -265,7 +235,10 @@ const CourseDetailBody = ({ course, levels, cohorts, sessions, users }) => {
                   {level.title}
                 </span>
                 <span className="text-xs text-muted">
-                  {cohorts.filter((cohort) => cohort.levelId === level.id).length} دفعة
+                  {
+                    myCohorts.filter((row) => row.levelId === level.id).length
+                  }{" "}
+                  دفعة
                 </span>
               </div>
             ))}
@@ -275,64 +248,44 @@ const CourseDetailBody = ({ course, levels, cohorts, sessions, users }) => {
 
       <div>
         <h4 className="mb-2 flex items-center gap-2 text-sm font-bold text-ink">
-          <CalendarDays className="h-4 w-4 text-muted" /> الدفعات والجلسات
+          <CalendarDays className="h-4 w-4 text-muted" /> دفعاتي في هذه الدورة
         </h4>
-        {courseCohorts.length === 0 ? (
-          <p className="text-sm text-muted">لا توجد دفعات معلنة بعد.</p>
+        {myCohorts.length === 0 ? (
+          <p className="text-sm text-muted">لا توجد دفعات مسجّل بها بعد.</p>
         ) : (
           <div className="space-y-2">
-            {courseCohorts.map((cohort) => {
-              const teacher = byId(users, cohort.teacherId);
-              const count = courseSessions.filter(
-                (session) => session.cohortId === cohort.id,
-              ).length;
-              return (
-                <div
-                  key={cohort.id}
-                  className="rounded-lg border border-border p-3"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="ltr text-sm font-semibold text-ink">
-                      {cohort.code}
-                    </span>
-                    {cohortStatusBadge(cohort.status)}
-                  </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
-                    <span>
-                      {formatDate(cohort.startDate)} —{" "}
-                      {formatDate(cohort.endDate)}
-                    </span>
-                    <span>السعة: {cohort.capacity ?? "—"}</span>
-                    <span>{count} جلسة</span>
-                    {teacher && <span>المدرب: {teacher.fullName}</span>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      <div>
-        <h4 className="mb-2 text-sm font-bold text-ink">جلسات قادمة</h4>
-        {upcoming.length === 0 ? (
-          <p className="text-sm text-muted">لا توجد جلسات مجدولة حالياً.</p>
-        ) : (
-          <div className="space-y-1.5">
-            {upcoming.map((session) => (
+            {myCohorts.map((row) => (
               <div
-                key={session.id}
-                className="flex items-center justify-between rounded-lg border border-border p-2.5 text-sm"
+                key={row.enrollmentId}
+                className="rounded-lg border border-border p-3"
               >
-                <span className="text-ink">
-                  جلسة {session.sessionNumber} — {session.topic}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted">
-                    {formatDate(session.sessionDate)}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="ltr text-sm font-semibold text-ink">
+                    {row.code}
                   </span>
-                  {sessionStatusBadge(session.status)}
+                  {cohortStatusBadge(row.status)}
                 </div>
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+                  {row.startDate && (
+                    <span>
+                      {formatDate(row.startDate)} — {formatDate(row.endDate)}
+                    </span>
+                  )}
+                  <span>
+                    الجلسات: {row.sessionsDone}/{row.sessionsTotal}
+                  </span>
+                  {row.teacherName && (
+                    <span>المدرب: {row.teacherName}</span>
+                  )}
+                </div>
+                {row.nextSession && (
+                  <div className="mt-2 flex items-center justify-between rounded-lg bg-canvas/70 px-3 py-2 text-xs">
+                    <span className="text-muted">
+                      الجلسة القادمة: {row.nextSession.topic || "—"}
+                    </span>
+                    {sessionStatusBadge("scheduled")}
+                  </div>
+                )}
               </div>
             ))}
           </div>

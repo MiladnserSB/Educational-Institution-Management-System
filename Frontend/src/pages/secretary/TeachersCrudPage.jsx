@@ -15,7 +15,7 @@ import Badge, {
 import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
 import { useToast } from "../../context/ToastContext";
-import { usersApi, cohortsApi } from "../../services/api";
+import { secretaryApi } from "../../services/secretaryApi";
 import {
   alive,
   cohortsByTeacher,
@@ -27,8 +27,8 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TeachersCrudPage = () => {
   const { toast } = useToast();
 
-  const usersResult = useFetch(() => usersApi.list(), []);
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
+  const usersResult = useFetch(() => secretaryApi.users.list(), []);
+  const cohortsResult = useFetch(() => secretaryApi.cohorts.list(), []);
 
   const { data: allUsers, loading, reload } = usersResult;
   const cohorts = cohortsResult.data.filter(alive);
@@ -99,8 +99,13 @@ const TeachersCrudPage = () => {
       name: "phone",
       label: "رقم الجوال",
       type: "tel",
+      required: true,
       placeholder: "05xxxxxxxx",
       className: "ltr",
+      validate: (value) =>
+        String(value || "").trim().length >= 6
+          ? undefined
+          : "رقم الجوال يجب ألا يقل عن 6 أحرف.",
     },
     {
       name: "birthDate",
@@ -137,7 +142,7 @@ const TeachersCrudPage = () => {
 
   const submitCreate = async (values) => {
     try {
-      await usersApi.create({
+      await secretaryApi.teachers.create({
         fullName: String(values.fullName).trim(),
         email: String(values.email).trim().toLowerCase(),
         phone: String(values.phone || "").trim(),

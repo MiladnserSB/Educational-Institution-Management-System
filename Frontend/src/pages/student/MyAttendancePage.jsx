@@ -7,71 +7,23 @@ import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import { attendanceBadge } from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
-import {
-  cohortsApi,
-  sessionsApi,
-  enrollmentsApi,
-  attendancesApi,
-  levelsApi,
-  coursesApi,
-} from "../../services/api";
-import {
-  alive,
-  attendanceForStudent,
-  courseForCohort,
-  formatDate,
-  percentage,
-  sessionTitle,
-} from "../../utils";
+import { studentApi } from "../../services/studentApi";
+import { formatDate, percentage } from "../../utils";
 
 const MyAttendancePage = () => {
-  const { user } = useAuth();
-
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const sessionsResult = useFetch(() => sessionsApi.list(), []);
-  const enrollmentsResult = useFetch(() => enrollmentsApi.list(), []);
-  const attendanceResult = useFetch(() => attendancesApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
-
-  const loading =
-    cohortsResult.loading ||
-    sessionsResult.loading ||
-    enrollmentsResult.loading ||
-    attendanceResult.loading;
-
-  const cohorts = cohortsResult.data.filter(alive);
-  const sessions = sessionsResult.data.filter(alive);
-  const enrollments = enrollmentsResult.data.filter(alive);
-  const attendance = attendanceResult.data;
-  const levels = levelsResult.data.filter(alive);
-  const courses = coursesResult.data.filter(alive);
-
-  const myAttendance = useMemo(
-    () => attendanceForStudent(attendance, enrollments, user?.id),
-    [attendance, enrollments, user],
-  );
+  // GET /api/student/attendance returns one ready-made row per record:
+  // { sessionId, cohortCode, sessionNumber, sessionDate, topic, status }
+  const attendanceResult = useFetch(() => studentApi.attendance.list(), []);
+  const { data: myAttendance, loading } = attendanceResult;
 
   const rows = useMemo(
     () =>
-      myAttendance
-        .map((record) => {
-          const session = bySessionId(sessions, record.SessionId);
-          const cohort = session
-            ? cohorts.find((item) => item.id === session.cohortId)
-            : undefined;
-          const course = cohort
-            ? courseForCohort(courses, levels, cohort)
-            : undefined;
-          return { record, session, course };
-        })
-        .sort((a, b) =>
-          String(b.session?.sessionDate || b.record.createdAt || "").localeCompare(
-            String(a.session?.sessionDate || a.record.createdAt || ""),
-          ),
+      [...myAttendance].sort((a, b) =>
+        String(b.sessionDate || b.createdAt || "").localeCompare(
+          String(a.sessionDate || a.createdAt || ""),
         ),
-    [myAttendance, sessions, cohorts, courses, levels],
+      ),
+    [myAttendance],
   );
 
   const counts = {
@@ -131,22 +83,20 @@ const MyAttendancePage = () => {
       ) : (
         <Card title="سجل الحضور" padding="none">
           <div className="divide-y divide-border/60">
-            {rows.map(({ record, session, course }) => (
+            {rows.map((record) => (
               <div
-                key={record.id}
+                key={`${record.sessionId}-${record.status}`}
                 className="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-ink">
-                    {session ? sessionTitle(session) : "جلسة محذوفة"}
+                    {record.topic || `جلسة رقم ${record.sessionNumber}`}
                   </p>
                   <p className="text-xs text-muted">
-                    {course?.name || "—"}
-                    {session
-                      ? ` · ${formatDate(session.sessionDate)}`
-                      : record.createdAt
-                        ? ` · ${formatDate(record.createdAt)}`
-                        : ""}
+                    {record.cohortCode || "—"}
+                    {record.sessionDate
+                      ? ` · ${formatDate(record.sessionDate)}`
+                      : ""}
                   </p>
                 </div>
                 {attendanceBadge(record.status)}
@@ -158,10 +108,5 @@ const MyAttendancePage = () => {
     </div>
   );
 };
-
-const bySessionId = (sessions, sessionId) =>
-  sessionId == null
-    ? undefined
-    : sessions.find((session) => session.id === sessionId);
 
 export default MyAttendancePage;

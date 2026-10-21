@@ -22,3 +22,13 @@ export const myAttendance = catchAsync(async (req, res) =>
 export const myNotes = catchAsync(async (req, res) =>
   ok(res, await studentSvc.listMyNotes(studentId(req))),
 );
+
+/** كتالوج الدورات المعتمدة ومستوياتها (لاستكشاف الدورات). */
+export const catalog = catchAsync(async (req, res) =>
+  ok(res, await studentSvc.listMyCatalog()),
+);
+
+/** تحديث بيانات الطالب بنفسه. */
+export const updateMe = catchAsync(async (req, res) =>
+  ok(res, await studentSvc.updateProfile(studentId(req), req.body)),
+);

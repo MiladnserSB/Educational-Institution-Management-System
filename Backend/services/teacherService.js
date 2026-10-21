@@ -4,6 +4,8 @@ import Session from "../models/sessionModel.js";
 import Enrollment from "../models/enrollmentModel.js";
 import EnrollmentResult from "../models/enrollmentResultModel.js";
 import Attendance from "../models/attendanceModel.js";
+import Course from "../models/courseModel.js";
+import Level from "../models/levelModel.js";
 import AppError from "../utils/AppError.js";
 
 const PRESENT = ["present", "late", "excused"];
@@ -129,6 +131,13 @@ export const listTeacherCohorts = async (teacherId) => {
       code: c.code,
       levelId: c.levelId?._id ? String(c.levelId._id) : c.levelId,
       levelTitle: c.levelId?.title || "",
+      teacherId: String(c.teacherId),
+      status: c.status,
+      startDate: c.startDate,
+      endDate: c.endDate,
+      capacity: c.capacity,
+      isActive: c.isActive,
+      deletedAt: c.deletedAt,
       students: cEnrollments.length,
       sessions: cSessions.length,
       completedSessions: cSessions.filter((s) => s.status === "done").length,
@@ -136,6 +145,55 @@ export const listTeacherCohorts = async (teacherId) => {
       attendanceRate: rate,
     };
   });
+};
+
+/**
+ * كتالوج المدرس: الدورات والمستويات المرتبطة بدفعاته فقط،
+ * حتى يستطيع عرض اسم الدورة في الواجهة.
+ */
+export const listTeacherCatalog = async (teacherId) => {
+  const cohortIds = await getTeacherCohortIds(teacherId);
+
+  const cohorts = await Cohort.find({ _id: { $in: cohortIds } })
+    .select("levelId")
+    .lean();
+
+  const levelIds = [
+    ...new Set(cohorts.map((c) => String(c.levelId))),
+  ].filter((id) => id && id !== "undefined");
+
+  const levels = await Level.find({ _id: { $in: levelIds }, deletedAt: null })
+    .sort("orderNumber")
+    .lean();
+
+  const courseIds = [
+    ...new Set(levels.map((l) => String(l.courseId))),
+  ].filter((id) => id && id !== "undefined");
+
+  const courses = await Course.find({ _id: { $in: courseIds }, deletedAt: null })
+    .sort("name")
+    .lean();
+
+  return {
+    courses: courses.map((c) => ({
+      id: String(c._id),
+      _id: c._id,
+      name: c.name,
+      description: c.description,
+      isActive: c.isActive,
+      deletedAt: c.deletedAt,
+      createdAt: c.createdAt,
+    })),
+    levels: levels.map((l) => ({
+      id: String(l._id),
+      _id: l._id,
+      title: l.title,
+      courseId: String(l.courseId),
+      orderNumber: l.orderNumber,
+      isActive: l.isActive,
+      deletedAt: l.deletedAt,
+    })),
+  };
 };
 
 /* ============================================================
@@ -222,7 +280,11 @@ export const listTeacherStudents = async (teacherId, { cohortId }) => {
 
     return {
       enrollmentId: String(e._id),
+      id: String(e._id),
       studentId: String(e.studentId),
+      cohortId: String(e.cohortId),
+      status: e.status,
+      enrolledAt: e.enrolledAt,
       fullName: student?.fullName || "",
       email: student?.email || "",
       study: student?.study || "",

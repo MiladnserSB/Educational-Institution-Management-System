@@ -12,14 +12,7 @@ import Badge from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import {
-  cohortsApi,
-  enrollmentsApi,
-  resultsApi,
-  levelsApi,
-  coursesApi,
-  usersApi,
-} from "../../services/api";
+import { teacherApi } from "../../services/teacherApi";
 import {
   alive,
   byId,
@@ -35,19 +28,18 @@ const GradesPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const enrollmentsResult = useFetch(() => enrollmentsApi.list(), []);
-  const resultsResult = useFetch(() => resultsApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
-  const usersResult = useFetch(() => usersApi.list(), []);
+  const cohortsResult = useFetch(() => teacherApi.cohorts.list(), []);
+  const enrollmentsResult = useFetch(() => teacherApi.enrollments.list(), []);
+  const resultsResult = useFetch(() => teacherApi.results.list(), []);
+  const catalogResult = useFetch(() => teacherApi.catalog.get(), []);
+  const usersResult = useFetch(() => teacherApi.students.listAsUsers(), []);
 
   const { reload: reloadResults } = resultsResult;
   const cohorts = cohortsResult.data.filter(alive);
   const enrollments = enrollmentsResult.data.filter(alive);
   const results = resultsResult.data.filter(alive);
-  const levels = levelsResult.data.filter(alive);
-  const courses = coursesResult.data.filter(alive);
+  const levels = (catalogResult.single?.levels ?? []).filter(alive);
+  const courses = (catalogResult.single?.courses ?? []).filter(alive);
   const allUsers = usersResult.data;
 
   const loading =
@@ -70,8 +62,6 @@ const GradesPage = () => {
     () => (cohortId ? enrollmentsByCohort(enrollments, cohortId) : []),
     [enrollments, cohortId],
   );
-
-  const currentCohort = myCohorts.find((record) => record.id === cohortId);
 
   const openEditor = (enrollment) => {
     const existing = resultByEnrollment(results, enrollment.id);
@@ -102,6 +92,13 @@ const GradesPage = () => {
       setFormError("الدرجة يجب أن تكون بين صفر والدرجة العظمى.");
       return;
     }
+    // The backend schema marks `notes` as required, so an empty string
+    // would be rejected with a 500 — validate it before sending.
+    const notes = String(form.notes || "").trim();
+    if (!notes) {
+      setFormError("ملاحظات الدرجة مطلوبة.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -109,15 +106,15 @@ const GradesPage = () => {
         enrollmentId: target.id,
         score,
         maxScore,
-        qrade: gradeFromPct(percentage(score, maxScore)),
-        notes: String(form.notes || "").trim(),
+        grade: gradeFromPct(percentage(score, maxScore)),
+        notes,
         isActive: true,
       };
       const existing = resultByEnrollment(results, target.id);
       if (existing) {
-        await resultsApi.update(existing.id, payload);
+        await teacherApi.results.update(existing.id, payload);
       } else {
-        await resultsApi.create(payload);
+        await teacherApi.results.create(payload);
       }
       toast("success", "تم حفظ الدرجة بنجاح.");
       setTarget(null);
@@ -224,7 +221,7 @@ const GradesPage = () => {
                                 </p>
                                 <p className="text-xs text-muted">{pct}%</p>
                               </div>
-                              <Badge tone="blue">{result.qrade}</Badge>
+                              <Badge tone="blue">{result.grade}</Badge>
                             </>
                           ) : (
                             <Badge tone="neutral">لم تُدرج الدرجة</Badge>
@@ -307,8 +304,9 @@ const GradesPage = () => {
 
             <Input
               label="ملاحظات وتغذية راجعة"
-              type="textarea"
-              placeholder="اختياري…"
+              as="textarea"
+              required
+              placeholder="اكتب ملاحظة على الدرجة…"
               value={form.notes}
               onChange={(event) =>
                 setForm((current) => ({

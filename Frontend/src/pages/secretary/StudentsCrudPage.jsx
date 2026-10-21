@@ -22,15 +22,7 @@ import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
 import { useToast } from "../../context/ToastContext";
-import {
-  usersApi,
-  enrollmentsApi,
-  attendancesApi,
-  resultsApi,
-  cohortsApi,
-  levelsApi,
-  coursesApi,
-} from "../../services/api";
+import { secretaryApi } from "../../services/secretaryApi";
 import {
   alive,
   attendanceForStudent,
@@ -47,13 +39,13 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const StudentsCrudPage = () => {
   const { toast } = useToast();
 
-  const usersResult = useFetch(() => usersApi.list(), []);
-  const enrollmentsResult = useFetch(() => enrollmentsApi.list(), []);
-  const attendanceResult = useFetch(() => attendancesApi.list(), []);
-  const resultsResult = useFetch(() => resultsApi.list(), []);
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
+  const usersResult = useFetch(() => secretaryApi.users.list(), []);
+  const enrollmentsResult = useFetch(() => secretaryApi.enrollments.list(), []);
+  const attendanceResult = useFetch(() => secretaryApi.attendances.list(), []);
+  const resultsResult = useFetch(() => secretaryApi.results.list(), []);
+  const cohortsResult = useFetch(() => secretaryApi.cohorts.list(), []);
+  const levelsResult = useFetch(() => secretaryApi.levels.list(), []);
+  const coursesResult = useFetch(() => secretaryApi.courses.list(), []);
 
   const { data: allUsers, loading, reload } = usersResult;
   const enrollments = enrollmentsResult.data.filter(alive);
@@ -122,8 +114,13 @@ const StudentsCrudPage = () => {
       name: "phone",
       label: "رقم الجوال",
       type: "tel",
+      required: true,
       placeholder: "05xxxxxxxx",
       className: "ltr",
+      validate: (value) =>
+        String(value || "").trim().length >= 6
+          ? undefined
+          : "رقم الجوال يجب ألا يقل عن 6 أحرف.",
     },
     {
       name: "birthDate",
@@ -153,7 +150,7 @@ const StudentsCrudPage = () => {
 
   const submitCreate = async (values) => {
     try {
-      await usersApi.create({
+      await secretaryApi.students.create({
         fullName: String(values.fullName).trim(),
         email: String(values.email).trim().toLowerCase(),
         phone: String(values.phone || "").trim(),
@@ -385,6 +382,7 @@ const StudentsCrudPage = () => {
               </Card>
             </div>
 
+
             <div>
               <h4 className="mb-2 text-sm font-bold text-ink">التسجيلات</h4>
               {detailEnrollments.length === 0 ? (
@@ -393,7 +391,7 @@ const StudentsCrudPage = () => {
                 <div className="space-y-2">
                   {detailEnrollments.map((enrollment) => {
                     const cohort = cohorts.find(
-                      (record) => record.id === enrollment.cohorttId,
+                      (record) => record.id === enrollment.cohortId,
                     );
                     const course = cohort
                       ? courseForCohort(courses, levels, cohort)
@@ -418,7 +416,6 @@ const StudentsCrudPage = () => {
                 </div>
               )}
             </div>
-
             <div>
               <h4 className="mb-2 text-sm font-bold text-ink">النتائج</h4>
               {detailResults.length === 0 ? (
@@ -434,7 +431,7 @@ const StudentsCrudPage = () => {
                     );
                     const cohort = enrollment
                       ? cohorts.find(
-                          (record) => record.id === enrollment.cohorttId,
+                          (record) => record.id === enrollment.cohortId,
                         )
                       : undefined;
                     const course = cohort
@@ -454,13 +451,14 @@ const StudentsCrudPage = () => {
                             {percentage(result.score, result.maxScore)}%
                           </p>
                         </div>
-                        <Badge tone="blue">{result.qrade}</Badge>
+                        <Badge tone="blue">{result.grade}</Badge>
                       </div>
                     );
                   })}
                 </div>
               )}
             </div>
+
           </div>
         )}
       </Modal>

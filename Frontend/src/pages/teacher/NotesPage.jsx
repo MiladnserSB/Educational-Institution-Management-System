@@ -13,7 +13,7 @@ import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { notesApi, usersApi } from "../../services/api";
+import { teacherApi } from "../../services/teacherApi";
 import {
   canSeeNote,
   formatDate,
@@ -38,8 +38,8 @@ const TeacherNotesPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const notesResult = useFetch(() => notesApi.list(), []);
-  const usersResult = useFetch(() => usersApi.list(), []);
+  const notesResult = useFetch(() => teacherApi.notes.list(), []);
+  const usersResult = useFetch(() => teacherApi.students.listAsUsers(), []);
 
   const { data: notes, loading, reload } = notesResult;
   const allUsers = usersResult.data;
@@ -84,7 +84,7 @@ const TeacherNotesPage = () => {
 
   const submitCreate = async (values) => {
     try {
-      await notesApi.create({
+      await teacherApi.notes.create({
         studentId: values.studentId,
         // Schema: the author is referenced through `teacherId` (ref: User).
         teacherId: user.id,

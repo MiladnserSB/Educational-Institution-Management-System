@@ -18,16 +18,16 @@ import { approvalBadge, accountStatusBadge } from "../../components/common/Badge
 import useFetch from "../../hooks/useFetch";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { usersApi, coursesApi, cohortsApi } from "../../services/api";
+import { adminApi } from "../../services/adminApi";
 import { alive, formatDate, usersByRole } from "../../utils";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const usersResult = useFetch(() => usersApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
+  const usersResult = useFetch(() => adminApi.users.list(), []);
+  const coursesResult = useFetch(() => adminApi.courses.list(), []);
+  const cohortsResult = useFetch(() => adminApi.cohorts.list(), []);
 
   const loading =
     usersResult.loading || coursesResult.loading || cohortsResult.loading;
@@ -49,16 +49,14 @@ const AdminDashboard = () => {
 
   const decide = async (kind, record, approve) => {
     try {
+      // Approval uses the dedicated approval endpoint; rejection closes the
+      // request with a soft delete so it leaves the pending list.
       if (kind === "course") {
-        await coursesApi.update(record.id, {
-          isActive: approve,
-          ...(approve ? {} : { deletedAt: new Date().toISOString() }),
-        });
+        if (approve) await adminApi.approvals.approve("courses", record.id);
+        else await adminApi.courses.remove(record.id);
       } else {
-        await usersApi.update(record.id, {
-          isActive: approve,
-          ...(approve ? {} : { deletedAt: new Date().toISOString() }),
-        });
+        if (approve) await adminApi.approvals.approve("users", record.id);
+        else await adminApi.users.remove(record.id);
       }
       toast(
         approve ? "success" : "warning",

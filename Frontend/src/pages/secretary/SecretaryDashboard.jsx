@@ -16,7 +16,7 @@ import Spinner from "../../components/common/Spinner";
 import { sessionStatusBadge } from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
 import { useAuth } from "../../context/AuthContext";
-import { usersApi, coursesApi, cohortsApi, sessionsApi, levelsApi } from "../../services/api";
+import { secretaryApi } from "../../services/secretaryApi";
 import {
   alive,
   courseForCohort,
@@ -30,11 +30,11 @@ import {
 const SecretaryDashboard = () => {
   const { user } = useAuth();
 
-  const usersResult = useFetch(() => usersApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const sessionsResult = useFetch(() => sessionsApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
+  const usersResult = useFetch(() => secretaryApi.users.list(), []);
+  const coursesResult = useFetch(() => secretaryApi.courses.list(), []);
+  const cohortsResult = useFetch(() => secretaryApi.cohorts.list(), []);
+  const sessionsResult = useFetch(() => secretaryApi.sessions.list(), []);
+  const levelsResult = useFetch(() => secretaryApi.levels.list(), []);
 
   const loading =
     usersResult.loading ||
@@ -168,7 +168,7 @@ const SecretaryDashboard = () => {
                     >
                       <div className="flex min-w-0 items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-blue/10 text-brand-blue">
-                          <CalendarDays className="h-4 w-4" />
+                          <CalendarDays className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
                           <p className="truncate text-sm font-medium text-ink">

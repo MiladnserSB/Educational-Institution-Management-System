@@ -61,6 +61,7 @@ router.delete("/cohorts/:id", ctrl.deleteCohort);
 router.get("/cohorts/:id/enrollments", ctrl.listCohortEnrollments);
 
 /* ---------- Enrollments ---------- */
+router.get("/enrollments", ctrl.listEnrollments);
 router.post(
   "/enrollments",
   validate(createEnrollmentSchema),
@@ -71,6 +72,15 @@ router.patch(
   validate(patchEnrollmentSchema),
   ctrl.patchEnrollment,
 );
+
+/* ---------- Sessions ---------- */
+router.get("/sessions", ctrl.listSessions);
+
+/* ---------- Attendance (overview) ---------- */
+router.get("/attendances", ctrl.listAttendances);
+
+/* ---------- Results (overview) ---------- */
+router.get("/results", ctrl.listResults);
 
 /* ---------- Courses ---------- */
 router.get("/courses", ctrl.listCourses);

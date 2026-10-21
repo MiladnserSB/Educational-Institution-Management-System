@@ -2,7 +2,9 @@ import * as statsSvc from "../services/teacherService.js";
 import * as sessionsSvc from "../services/sessionService.js";
 import * as attendanceSvc from "../services/attendanceService.js";
 import * as resultsSvc from "../services/resultService.js";
+import * as notesSvc from "../services/noteService.js";
 import {catchAsync, ok, created } from "../utils/lib.js";
+import AppError from "../utils/AppError.js";
 
 const teacherId = (req) => req.user._id;
 
@@ -20,6 +22,11 @@ export const upcomingSessions = catchAsync(async (req, res) =>
     res,
     await statsSvc.listUpcomingSessions(teacherId(req), req.query.limit || 5),
   ),
+);
+
+/* ---------- Catalog ---------- */
+export const catalog = catchAsync(async (req, res) =>
+  ok(res, await statsSvc.listTeacherCatalog(teacherId(req))),
 );
 
 /* ---------- Sessions ---------- */
@@ -100,3 +107,44 @@ export const approveAll = catchAsync(async (req, res) =>
 export const listStudents = catchAsync(async (req, res) =>
   ok(res, await statsSvc.listTeacherStudents(teacherId(req), req.query)),
 );
+
+/* ---------- Notes ---------- */
+/** ملاحظات المدرس نفسه فقط. */
+export const listNotes = catchAsync(async (req, res) => {
+  const { items, meta } = await notesSvc.listNotes({
+    ...req.query,
+    teacherId: teacherId(req),
+  });
+  ok(res, { items, meta });
+});
+
+export const getNote = catchAsync(async (req, res) => {
+  const note = await notesSvc.getNote(req.params.id);
+  if (String(note.teacherId) !== String(teacherId(req)))
+    throw new AppError("Note not yours", 403);
+  ok(res, note);
+});
+
+export const createNote = catchAsync(async (req, res) =>
+  created(
+    res,
+    await notesSvc.createNote({
+      ...req.body,
+      teacherId: teacherId(req),
+    }),
+  ),
+);
+
+export const updateNote = catchAsync(async (req, res) => {
+  const note = await notesSvc.getNote(req.params.id);
+  if (String(note.teacherId) !== String(teacherId(req)))
+    throw new AppError("Note not yours", 403);
+  ok(res, await notesSvc.updateNote(req.params.id, req.body));
+});
+
+export const deleteNote = catchAsync(async (req, res) => {
+  const note = await notesSvc.getNote(req.params.id);
+  if (String(note.teacherId) !== String(teacherId(req)))
+    throw new AppError("Note not yours", 403);
+  ok(res, await notesSvc.deleteNote(req.params.id));
+});

@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
-import { UserPlus, Mail, Phone, Pencil, Power, PowerOff } from "lucide-react";
+import { UserPlus, Mail, Pencil, Power, PowerOff } from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
-import Input from "../../components/common/Input";
 import Form from "../../components/common/Form";
 import Modal from "../../components/common/Modal";
 import Table from "../../components/common/Table";
@@ -14,14 +13,14 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { accountStatusBadge } from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
 import { useToast } from "../../context/ToastContext";
-import { usersApi } from "../../services/api";
-import { alive, formatDate, usersByRole } from "../../utils";
+import { adminApi } from "../../services/adminApi";
+import { formatDate, usersByRole } from "../../utils";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const UsersControlPage = () => {
   const { toast } = useToast();
-  const usersResult = useFetch(() => usersApi.list(), []);
+  const usersResult = useFetch(() => adminApi.users.list(), []);
   const { data: allUsers, loading, reload } = usersResult;
 
   const [search, setSearch] = useState("");
@@ -88,8 +87,13 @@ const UsersControlPage = () => {
       name: "phone",
       label: "رقم الجوال",
       type: "tel",
+      required: true,
       placeholder: "05xxxxxxxx",
       className: "ltr",
+      validate: (value) =>
+        String(value || "").trim().length >= 6
+          ? undefined
+          : "رقم الجوال يجب ألا يقل عن 6 أحرف.",
     },
     {
       name: "password",
@@ -112,7 +116,7 @@ const UsersControlPage = () => {
 
   const submitCreate = async (values) => {
     try {
-      await usersApi.create({
+      await adminApi.users.create({
         fullName: String(values.fullName).trim(),
         email: String(values.email).trim().toLowerCase(),
         phone: String(values.phone || "").trim(),
@@ -132,7 +136,7 @@ const UsersControlPage = () => {
 
   const submitEdit = async (values) => {
     try {
-      await usersApi.update(editTarget.id, {
+      await adminApi.users.update(editTarget.id, {
         fullName: String(values.fullName).trim(),
         email: String(values.email).trim().toLowerCase(),
         phone: String(values.phone || "").trim(),
@@ -149,9 +153,7 @@ const UsersControlPage = () => {
   const toggleStatus = async () => {
     if (!confirmTarget) return;
     try {
-      await usersApi.update(confirmTarget.id, {
-        isActive: confirmTarget.nextStatus,
-      });
+      await adminApi.users.setActive(confirmTarget.id, confirmTarget.nextStatus);
       toast(
         confirmTarget.nextStatus ? "success" : "warning",
         confirmTarget.nextStatus

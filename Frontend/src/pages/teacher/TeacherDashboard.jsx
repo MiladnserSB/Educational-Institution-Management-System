@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useMemo } from "react";
 import {
   Layers,
   Users,
@@ -16,14 +17,7 @@ import EmptyState from "../../components/common/EmptyState";
 import { sessionStatusBadge } from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
 import { useAuth } from "../../context/AuthContext";
-import {
-  cohortsApi,
-  sessionsApi,
-  enrollmentsApi,
-  attendancesApi,
-  levelsApi,
-  coursesApi,
-} from "../../services/api";
+import { teacherApi } from "../../services/teacherApi";
 import {
   alive,
   courseForCohort,
@@ -37,25 +31,35 @@ import {
 const TeacherDashboard = () => {
   const { user } = useAuth();
 
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const sessionsResult = useFetch(() => sessionsApi.list(), []);
-  const enrollmentsResult = useFetch(() => enrollmentsApi.list(), []);
-  const attendanceResult = useFetch(() => attendancesApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
+  const cohortsResult = useFetch(() => teacherApi.cohorts.list(), []);
+  const sessionsResult = useFetch(() => teacherApi.sessions.list(), []);
+  const enrollmentsResult = useFetch(() => teacherApi.enrollments.list(), []);
+  const catalogResult = useFetch(() => teacherApi.catalog.get(), []);
+
+  const cohorts = cohortsResult.data.filter(alive);
+  const sessions = sessionsResult.data.filter(alive);
+  const enrollments = enrollmentsResult.data.filter(alive);
+  const levels = (catalogResult.single?.levels ?? []).filter(alive);
+  const courses = (catalogResult.single?.courses ?? []).filter(alive);
+
+  // Attendance is only reachable per session, so it is loaded for the
+  // sessions that are already finished.
+  const doneSessionIds = useMemo(
+    () =>
+      sessions.filter((session) => session.status === "done").map((s) => s.id),
+    [sessions],
+  );
+  const attendanceResult = useFetch(
+    () => teacherApi.attendance.listForSessions(doneSessionIds),
+    [doneSessionIds.join(",")],
+  );
+  const attendance = attendanceResult.data;
 
   const loading =
     cohortsResult.loading ||
     sessionsResult.loading ||
     enrollmentsResult.loading ||
-    attendanceResult.loading;
-
-  const cohorts = cohortsResult.data.filter(alive);
-  const sessions = sessionsResult.data.filter(alive);
-  const enrollments = enrollmentsResult.data.filter(alive);
-  const attendance = attendanceResult.data;
-  const levels = levelsResult.data.filter(alive);
-  const courses = coursesResult.data.filter(alive);
+    catalogResult.loading;
 
   const myCohorts = cohortsByTeacher(cohorts, user?.id);
   const myCohortIds = new Set(myCohorts.map((cohort) => cohort.id));
@@ -81,7 +85,7 @@ const TeacherDashboard = () => {
   );
 
   const markedSessions = new Set(
-    attendance.map((record) => record.SessionId),
+    attendance.map((record) => record.sessionId),
   );
   const pendingAttendance = mySessions.filter(
     (session) =>

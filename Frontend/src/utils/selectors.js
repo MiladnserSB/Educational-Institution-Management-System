@@ -1,14 +1,14 @@
 /**
  * Selectors / formatting helpers.
  *
- * Field names follow the Mongoose schema models in Backend/Backend/models:
+ * Field names follow the Mongoose schema models in Backend/models:
  *   Course:   name, description, isActive, deletedAt
  *   Level:    title, courseId, orderNumber, isActive, deletedAt
  *   Cohort:   code, levelId, teacherId, startDate, endDate, capacity, status
  *   Session:  cohortId, sessionNumber, sessionDate, topic, status (scheduled|done|cancelled)
- *   Enrollment: studentId, cohorttId, status, enrolledAt
- *   EnrollmentResult: enrollmentId, score, maxScore, qrade, notes, isActive
- *   Attendance: SessionId, enrollmentId, status (present|absent|late|excused)
+ *   Enrollment: studentId, cohortId, status, enrolledAt
+ *   EnrollmentResult: enrollmentId, score, maxScore, grade, notes, isActive
+ *   Attendance: sessionId, enrollmentId, status (present|absent|late|excused)
  *   StudentNote: studentId, teacherId, note, visibility (teacherOnly|admin|student)
  *   User: fullName, email, role, phone, isActive, birthDate, study, specialization, bio
  */
@@ -52,7 +52,7 @@ export const enrollmentsByCohort = (enrollments = [], cohortId) =>
   enrollments.filter(
     (enrollment) =>
       alive(enrollment) &&
-      enrollment.cohorttId === cohortId &&
+      enrollment.cohortId === cohortId &&
       enrollment.status !== "withdrawn",
   );
 
@@ -62,7 +62,7 @@ export const enrollmentsByStudent = (enrollments = [], userId) =>
   );
 
 export const attendanceBySession = (attendance = [], sessionId) =>
-  attendance.filter((record) => record.SessionId === sessionId);
+  attendance.filter((record) => record.sessionId === sessionId);
 
 export const resultByEnrollment = (results = [], enrollmentId) =>
   results.find((record) => record.enrollmentId === enrollmentId);

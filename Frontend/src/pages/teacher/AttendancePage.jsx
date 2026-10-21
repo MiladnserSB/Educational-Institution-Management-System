@@ -11,15 +11,7 @@ import Badge from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import {
-  cohortsApi,
-  sessionsApi,
-  enrollmentsApi,
-  attendancesApi,
-  levelsApi,
-  coursesApi,
-  usersApi,
-} from "../../services/api";
+import { teacherApi } from "../../services/teacherApi";
 import {
   attendanceBySession,
   alive,
@@ -42,33 +34,39 @@ const AttendancePage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const sessionsResult = useFetch(() => sessionsApi.list(), []);
-  const enrollmentsResult = useFetch(() => enrollmentsApi.list(), []);
-  const attendanceResult = useFetch(() => attendancesApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
-  const usersResult = useFetch(() => usersApi.list(), []);
+  const [cohortId, setCohortId] = useState("");
+  const [sessionId, setSessionId] = useState("");
+  const [marks, setMarks] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  const cohortsResult = useFetch(() => teacherApi.cohorts.list(), []);
+  const sessionsResult = useFetch(() => teacherApi.sessions.list(), []);
+  const enrollmentsResult = useFetch(() => teacherApi.enrollments.list(), []);
+  const catalogResult = useFetch(() => teacherApi.catalog.get(), []);
+  const usersResult = useFetch(() => teacherApi.students.listAsUsers(), []);
+
+  // The backend exposes attendance per session only.
+  const attendanceResult = useFetch(
+    () =>
+      sessionId
+        ? teacherApi.attendance.list(sessionId)
+        : Promise.resolve([]),
+    [sessionId],
+  );
 
   const { reload: reloadAttendance } = attendanceResult;
   const cohorts = cohortsResult.data.filter(alive);
   const sessions = sessionsResult.data.filter(alive);
   const enrollments = enrollmentsResult.data.filter(alive);
   const attendance = attendanceResult.data;
-  const levels = levelsResult.data.filter(alive);
-  const courses = coursesResult.data.filter(alive);
+  const levels = (catalogResult.single?.levels ?? []).filter(alive);
+  const courses = (catalogResult.single?.courses ?? []).filter(alive);
   const allUsers = usersResult.data;
 
   const loading =
     cohortsResult.loading ||
     sessionsResult.loading ||
-    enrollmentsResult.loading ||
-    attendanceResult.loading;
-
-  const [cohortId, setCohortId] = useState("");
-  const [sessionId, setSessionId] = useState("");
-  const [marks, setMarks] = useState({});
-  const [saving, setSaving] = useState(false);
+    enrollmentsResult.loading;
 
   const myCohorts = useMemo(
     () => cohortsByTeacher(cohorts, user?.id),
@@ -97,7 +95,6 @@ const AttendancePage = () => {
     () => (sessionId ? attendanceBySession(attendance, sessionId) : []),
     [attendance, sessionId],
   );
-
   // Pre-fill marks from stored records whenever the session changes.
   useEffect(() => {
     if (!sessionId) {
@@ -128,23 +125,15 @@ const AttendancePage = () => {
     if (!sessionId || enrolled.length === 0) return;
     setSaving(true);
     try {
-      // Upsert one Attendance document per enrollment for this session.
-      const byEnrollment = new Map(
-        existing.map((record) => [record.enrollmentId, record]),
-      );
+      // The backend upserts one Attendance document per enrollment/session.
       for (const enrollment of enrolled) {
         const status = marks[enrollment.id];
         if (!status) continue;
-        const stored = byEnrollment.get(enrollment.id);
-        if (stored) {
-          await attendancesApi.update(stored.id, { status });
-        } else {
-          await attendancesApi.create({
-            SessionId: sessionId,
-            enrollmentId: enrollment.id,
-            status,
-          });
-        }
+        await teacherApi.attendance.upsert({
+          sessionId,
+          enrollmentId: enrollment.id,
+          status,
+        });
       }
       toast("success", "تم حفظ سجل الحضور بنجاح.");
       reloadAttendance();

@@ -1,35 +1,59 @@
 /**
- * API layer for EDUMS.
+ * Core API layer for EDUMS.
  *
- * Mirrors the backend structure (server -> routes -> controllers -> services -> models)
- * and the response envelope used by the existing user controller:
- *   success: { success: true, data: <payload> }
- *   error:   { message: "..." }
+ * The backend exposes **role-scoped** routers (Backend/app.js):
+ *   /api/auth      -> login / register / current session
+ *   /api/admin     -> admin only
+ *   /api/secretary -> secretary only
+ *   /api/teacher   -> teacher only
+ *   /api/student   -> student only
  *
- * Expected REST resources (plural, matching the mongoose models):
- *   /api/auth            -> login / current session
- *   /api/users           -> User
- *   /api/courses         -> Course
- *   /api/levels          -> Level
- *   /api/cohorts         -> Cohort
- *   /api/sessions        -> Session
- *   /api/enrollments     -> Enrollment
- *   /api/enrollment-results -> EnrollmentResult
- *   /api/attendances     -> Attendance
- *   /api/student-notes   -> StudentNote
+ * Every successful response uses the envelope:
+ *   { success: true, data: <payload> }
+ * and every failure uses:
+ *   { message: "..." }
+ *
+ * List payloads come in two flavours depending on the endpoint:
+ *   { data: [ ... ] }                     -> plain array
+ *   { data: { items: [ ... ], meta } }    -> paginated collection
+ *
+ * `unwrapList` normalises both into a flat array so the UI layer never has
+ * to care about the difference; `unwrapOne` returns a single record.
  */
 
 const BASE_URL = (
-  import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+  import.meta.env.VITE_API_URL || "http://localhost:4000/api"
 ).replace(/\/+$/, "");
 
 const TOKEN_KEY = "edums.token";
+const USER_KEY = "edums.user";
+
+/* -------------------------------------------------------------------------- */
+/*                                    session                                   */
+/* -------------------------------------------------------------------------- */
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);
+
 export const setToken = (token) =>
   token
     ? localStorage.setItem(TOKEN_KEY, token)
     : localStorage.removeItem(TOKEN_KEY);
+
+export const getStoredUser = () => {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
+/** Role of the signed-in user, or null when there is no session. */
+export const getRole = () => getStoredUser()?.role ?? null;
+
+/* -------------------------------------------------------------------------- */
+/*                                   helpers                                    */
+/* -------------------------------------------------------------------------- */
 
 /** Mongoose documents use `_id`; normalize to `id` for the UI layer. */
 const normalizeRecord = (record) => {
@@ -38,7 +62,7 @@ const normalizeRecord = (record) => {
 
   const { _id, ...rest } = record;
   const normalized = { ...rest };
-  if (_id !== undefined) normalized.id = _id;
+  if (_id !== undefined && normalized.id === undefined) normalized.id = _id;
 
   // Recurse so nested documents are normalized too — notably the login
   // payload `{ token, user: { _id } }`, where `user.id` must exist for
@@ -53,26 +77,58 @@ const normalizeRecord = (record) => {
   return normalized;
 };
 
-const unwrap = (payload) => {
+/** Pull `data` out of the response envelope. */
+const payloadOf = (payload) => {
   if (payload == null) return payload;
-  if (Array.isArray(payload)) return payload.map(normalizeRecord);
-  if (typeof payload === "object" && "data" in payload) {
-    const data = payload.data;
-    return Array.isArray(data)
-      ? data.map(normalizeRecord)
-      : normalizeRecord(data);
-  }
-  return normalizeRecord(payload);
+  if (typeof payload === "object" && "data" in payload) return payload.data;
+  return payload;
 };
 
-async function request(path, { method = "GET", body, signal } = {}) {
+/**
+ * Normalize a list payload into a flat array.
+ * Handles both `{ data: [...] }` and `{ data: { items: [...] } }`.
+ * Accepts a promise as well, so it can wrap an `api.get(...)` call directly.
+ */
+export const unwrapList = async (payload) => {
+  const data = payloadOf(await payload);
+  if (Array.isArray(data)) return data.map(normalizeRecord);
+  if (Array.isArray(data?.items)) return data.items.map(normalizeRecord);
+  return [];
+};
+
+/** Normalize a single-record payload. Accepts a promise as well. */
+export const unwrapOne = async (payload) =>
+  normalizeRecord(payloadOf(await payload));
+
+/** Build a query string from a plain object (skips empty values). */
+export const buildQuery = (params = {}) => {
+  const search = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === "") return;
+    if (Array.isArray(value)) {
+      value.forEach((item) => search.append(key, item));
+      return;
+    }
+    search.append(key, value);
+  });
+  const query = search.toString();
+  return query ? `?${query}` : "";
+};
+
+/* -------------------------------------------------------------------------- */
+/*                                   request                                    */
+/* -------------------------------------------------------------------------- */
+
+async function request(path, { method = "GET", body, signal, query } = {}) {
   const headers = { "Content-Type": "application/json" };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
+  const url = `${BASE_URL}${path}${buildQuery(query)}`;
+
   let response;
   try {
-    response = await fetch(`${BASE_URL}${path}`, {
+    response = await fetch(url, {
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
@@ -82,7 +138,7 @@ async function request(path, { method = "GET", body, signal } = {}) {
     throw new Error("تعذّر الاتصال بالخادم، تحقّق من الشبكة.");
   }
 
-  let payload = null;
+  let payload;
   try {
     payload = await response.json();
   } catch {
@@ -90,47 +146,47 @@ async function request(path, { method = "GET", body, signal } = {}) {
   }
 
   if (!response.ok) {
+    // The session expired or the account was disabled -> drop the token so
+    // the route guard sends the user back to the login screen.
+    if (response.status === 401) setToken(null);
     throw new Error(
       (payload && payload.message) || `تعذّر تنفيذ الطلب (${response.status}).`,
     );
   }
 
-  return unwrap(payload);
+  return payload;
 }
 
-const api = {
+export const api = {
   get: (path, options = {}) => request(path, { ...options, method: "GET" }),
   post: (path, body, options = {}) =>
     request(path, { ...options, method: "POST", body }),
   put: (path, body, options = {}) =>
     request(path, { ...options, method: "PUT", body }),
-  remove: (path, options = {}) =>
-    request(path, { ...options, method: "DELETE" }),
+  patch: (path, body, options = {}) =>
+    request(path, { ...options, method: "PATCH", body }),
+  remove: (path, options = {}) => request(path, { ...options, method: "DELETE" }),
 };
 
-/** Standard CRUD factory for a REST resource. */
-const resource = (name) => ({
-  list: (options) => api.get(`/${name}`, options),
-  get: (id, options) => api.get(`/${name}/${id}`, options),
-  create: (data, options) => api.post(`/${name}`, data, options),
-  update: (id, data, options) => api.put(`/${name}/${id}`, data, options),
-  remove: (id, options) => api.remove(`/${name}/${id}`, options),
-});
+/* -------------------------------------------------------------------------- */
+/*                                     auth                                     */
+/* -------------------------------------------------------------------------- */
 
 export const authApi = {
   /** -> { token, user } */
-  login: (email, password) => api.post("/auth/login", { email, password }),
-  me: () => api.get("/auth/me"),
+  login: async (email, password) =>
+    unwrapOne(await api.post("/auth/login", { email, password })),
+  register: async (payload) =>
+    unwrapOne(await api.post("/auth/register", payload)),
+  /** -> the authenticated user */
+  me: async () => unwrapOne(await api.get("/auth/me")),
 };
 
-export const usersApi = resource("users");
-export const coursesApi = resource("courses");
-export const levelsApi = resource("levels");
-export const cohortsApi = resource("cohorts");
-export const sessionsApi = resource("sessions");
-export const enrollmentsApi = resource("enrollments");
-export const resultsApi = resource("enrollment-results");
-export const attendancesApi = resource("attendances");
-export const notesApi = resource("student-notes");
+/**
+ * The backend caps every collection at 200 records per page, and the UI
+ * performs its own search/filtering client-side — so we always ask for the
+ * maximum page size.
+ */
+export const PAGE_SIZE = 200;
 
 export default api;

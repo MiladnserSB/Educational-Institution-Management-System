@@ -7,63 +7,29 @@ import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import Badge from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
-import {
-  cohortsApi,
-  enrollmentsApi,
-  resultsApi,
-  levelsApi,
-  coursesApi,
-} from "../../services/api";
-import {
-  alive,
-  byId,
-  courseForCohort,
-  formatDate,
-  percentage,
-  resultsForStudent,
-} from "../../utils";
+import { studentApi } from "../../services/studentApi";
+import { formatDate, percentage } from "../../utils";
 
 const MyGradesPage = () => {
-  const { user } = useAuth();
+  // GET /api/student/grades returns one ready-made row per published result:
+  // { id, enrollmentId, cohortCode, kind, score, maxScore, grade, notes, date }
+  const resultsResult = useFetch(() => studentApi.grades.list(), []);
+  const { data: results, loading } = resultsResult;
 
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const enrollmentsResult = useFetch(() => enrollmentsApi.list(), []);
-  const resultsResult = useFetch(() => resultsApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
-
-  const loading =
-    cohortsResult.loading ||
-    enrollmentsResult.loading ||
-    resultsResult.loading;
-
-  const cohorts = cohortsResult.data.filter(alive);
-  const enrollments = enrollmentsResult.data.filter(alive);
-  const results = resultsResult.data.filter(alive);
-  const levels = levelsResult.data.filter(alive);
-  const courses = coursesResult.data.filter(alive);
-
-  const rows = useMemo(() => {
-    const mapped = resultsForStudent(results, enrollments, user?.id).map(
-      (result) => {
-        const enrollment = byId(enrollments, result.enrollmentId);
-        const cohort = enrollment
-          ? byId(cohorts, enrollment.cohorttId)
-          : undefined;
-        const course = cohort
-          ? courseForCohort(courses, levels, cohort)
-          : undefined;
-        const pct = percentage(result.score, result.maxScore);
-        return { result, enrollment, cohort, course, pct };
-      },
-    );
-    return mapped.sort((a, b) =>
-      String(b.result.createdAt || "").localeCompare(
-        String(a.result.createdAt || ""),
-      ),
-    );
-  }, [results, enrollments, cohorts, courses, levels, user]);
+  const rows = useMemo(
+    () =>
+      results
+        .map((result) => ({
+          result,
+          pct: percentage(result.score, result.maxScore),
+        }))
+        .sort((a, b) =>
+          String(b.result.date || b.result.createdAt || "").localeCompare(
+            String(a.result.date || a.result.createdAt || ""),
+          ),
+        ),
+    [results],
+  );
 
   const avg = rows.length
     ? Math.round(rows.reduce((sum, row) => sum + row.pct, 0) / rows.length)
@@ -112,21 +78,19 @@ const MyGradesPage = () => {
         />
       ) : (
         <div className="space-y-3">
-          {rows.map(({ result, cohort, course, pct }) => (
+          {rows.map(({ result, pct }) => (
             <Card key={result.id}>
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="text-sm font-bold text-ink">
-                      {course?.name || "—"}
+                      {result.kind || "الدورة"}
                     </h3>
-                    <Badge tone="blue">{result.qrade}</Badge>
+                    <Badge tone="blue">{result.grade}</Badge>
                   </div>
                   <p className="mt-1 text-xs text-muted">
-                    الدفعة: <span className="ltr">{cohort?.code || "—"}</span>
-                    {result.createdAt
-                      ? ` · ${formatDate(result.createdAt)}`
-                      : ""}
+                    الدفعة: <span className="ltr">{result.cohortCode || "—"}</span>
+                    {result.date ? ` · ${formatDate(result.date)}` : ""}
                   </p>
                   {result.notes && (
                     <p className="mt-2 rounded-lg bg-canvas/70 px-3 py-2 text-sm leading-relaxed text-ink/80">

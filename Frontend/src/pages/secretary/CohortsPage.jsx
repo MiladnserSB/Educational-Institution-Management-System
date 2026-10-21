@@ -14,23 +14,9 @@ import Badge, { cohortStatusBadge } from "../../components/common/Badge";
 import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
 import { useToast } from "../../context/ToastContext";
-import {
-  cohortsApi,
-  levelsApi,
-  coursesApi,
-  usersApi,
-  enrollmentsApi,
-  sessionsApi,
-} from "../../services/api";
-import {
-  alive,
-  byId,
-  cohortEnrollmentCount,
-  formatDate,
-  levelsByCourse,
-  sessionsByCohort,
-  usersByRole,
-} from "../../utils";
+import { secretaryApi } from "../../services/secretaryApi";
+import { alive, byId, cohortEnrollmentCount, formatDate, levelsByCourse, sessionsByCohort, usersByRole } from "../../utils";
+import { enrollmentsByCohort } from "../../utils/selectors";
 
 const STATUS_OPTIONS = [
   { value: "planned", label: "مخططة" },
@@ -42,12 +28,12 @@ const STATUS_OPTIONS = [
 const CohortsPage = () => {
   const { toast } = useToast();
 
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
-  const usersResult = useFetch(() => usersApi.list(), []);
-  const enrollmentsResult = useFetch(() => enrollmentsApi.list(), []);
-  const sessionsResult = useFetch(() => sessionsApi.list(), []);
+  const cohortsResult = useFetch(() => secretaryApi.cohorts.list(), []);
+  const levelsResult = useFetch(() => secretaryApi.levels.list(), []);
+  const coursesResult = useFetch(() => secretaryApi.courses.list(), []);
+  const usersResult = useFetch(() => secretaryApi.users.list(), []);
+  const enrollmentsResult = useFetch(() => secretaryApi.enrollments.list(), []);
+  const sessionsResult = useFetch(() => secretaryApi.sessions.list(), []);
 
   const { data: cohorts, loading, reload } = cohortsResult;
   const levels = levelsResult.data.filter(alive);
@@ -164,7 +150,7 @@ const CohortsPage = () => {
 
   const submitCreate = async (values) => {
     try {
-      await cohortsApi.create({
+      await secretaryApi.cohorts.create({
         code: String(values.code).trim(),
         levelId: values.levelId,
         teacherId: values.teacherId,
@@ -185,7 +171,7 @@ const CohortsPage = () => {
 
   const submitEdit = async (values) => {
     try {
-      await cohortsApi.update(editTarget.id, {
+      await secretaryApi.cohorts.update(editTarget.id, {
         code: String(values.code).trim(),
         levelId: values.levelId,
         teacherId: values.teacherId,
@@ -440,7 +426,8 @@ const DetailBody = ({
   const level = byId(levels, cohort.levelId);
   const course = level ? byId(courses, level.courseId) : undefined;
   const teacher = byId(users, cohort.teacherId);
-  const count = cohortEnrollmentCount(enrollments, cohort.id);
+  const cohortEnrollments = enrollmentsByCohort(enrollments, cohort.id);
+  const count = cohortEnrollments.length;
   const cohortSessions = sessionsByCohort(sessions, cohort.id);
 
   return (
@@ -525,7 +512,7 @@ const DetailBody = ({
       <div className="flex items-center gap-2 text-xs text-muted">
         <Users className="h-4 w-4" />
         <span>
-          اضغط على أي صف في القائمة لعرض تفاصيل الدفعة والجلسات المرتبطة بها.
+          اضغط على أي صف في القائمة لعرض تفاصيل الدفعة والطلاب المسجّلين بها.
         </span>
       </div>
     </div>

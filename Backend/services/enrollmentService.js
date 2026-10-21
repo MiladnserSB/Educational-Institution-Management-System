@@ -105,6 +105,34 @@ export const patchEnrollment = async (id, { status }) => {
 };
 
 /**
+ * كل التسجيلات — للسكرتيرة (للعرض في صفحة الطلاب وصفحة الدفعات).
+ */
+export const listEnrollments = async ({ cohortId, studentId, status } = {}) => {
+  const filter = { deletedAt: null };
+  if (cohortId) filter.cohortId = cohortId;
+  if (studentId) filter.studentId = studentId;
+  if (status) filter.status = status;
+
+  const items = await Enrollment.find(filter)
+    .populate("studentId", "fullName email phone study")
+    .sort("-createdAt")
+    .lean();
+
+  return items.map((e) => ({
+    id: String(e._id),
+    _id: e._id,
+    studentId: e.studentId?._id ? String(e.studentId._id) : e.studentId,
+    student: e.studentId?.fullName ? e.studentId : null,
+    cohortId: String(e.cohortId),
+    status: e.status,
+    enrolledAt: e.enrolledAt,
+    isActive: e.isActive,
+    createdAt: e.createdAt,
+    updatedAt: e.updatedAt,
+  }));
+};
+
+/**
  * قائمة الطلاب غير المسجّلين في دفعة معيّنة
  * GET /api/secretary/students?notIn=:cohortId
  */

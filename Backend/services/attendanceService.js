@@ -31,6 +31,58 @@ const ensureSessionOwnership = async (sessionId, teacherId) => {
 /* ============================================================
  * قائمة الحضور لجلسة
  * ============================================================ */
+/**
+ * كل سجلات الحضور — للسكرتيرة.
+ * المدرس يستخدم `listAttendance` (مقيّد بجلساته) والطالب يستخدم `/student/attendance`.
+ */
+export const listAllAttendance = async ({
+  cohortId,
+  studentId,
+  sessionId,
+} = {}) => {
+  const enrollmentFilter = { deletedAt: null };
+  if (studentId) enrollmentFilter.studentId = studentId;
+  if (cohortId) enrollmentFilter.cohortId = cohortId;
+
+  const enrollments = await Enrollment.find(enrollmentFilter)
+    .select("_id studentId")
+    .lean();
+
+  const enrollmentIds = enrollments.map((e) => e._id);
+  const filter = { enrollmentId: { $in: enrollmentIds } };
+  if (sessionId) filter.sessionId = sessionId;
+
+  const items = await Attendance.find(filter).sort("-createdAt").lean();
+
+  const studentIds = enrollments.map((e) => e.studentId);
+  const students = await User.find({ _id: { $in: studentIds } })
+    .select("fullName email")
+    .lean();
+
+  const studentMap = Object.fromEntries(
+    students.map((s) => [String(s._id), s]),
+  );
+
+  return items.map((a) => {
+    const enrollment = enrollments.find(
+      (e) => String(e._id) === String(a.enrollmentId),
+    );
+    const student = enrollment
+      ? studentMap[String(enrollment.studentId)]
+      : null;
+    return {
+      ...shape(a),
+      student: student
+        ? {
+            id: String(student._id),
+            fullName: student.fullName,
+            email: student.email,
+          }
+        : null,
+    };
+  });
+};
+
 export const listAttendance = async (teacherId, { sessionId }) => {
   if (!sessionId) throw new AppError("sessionId is required", 400);
   await ensureSessionOwnership(sessionId, teacherId);

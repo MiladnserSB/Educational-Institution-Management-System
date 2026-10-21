@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Plus, Pencil, CheckCircle, XCircle, CalendarDays } from "lucide-react";
+import { Plus, Pencil, CheckCircle, XCircle } from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
@@ -14,7 +14,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import useFetch from "../../hooks/useFetch";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { sessionsApi, cohortsApi, levelsApi, coursesApi } from "../../services/api";
+import { teacherApi } from "../../services/teacherApi";
 import {
   alive,
   byId,
@@ -34,15 +34,14 @@ const TeacherSessionsPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const sessionsResult = useFetch(() => sessionsApi.list(), []);
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
+  const sessionsResult = useFetch(() => teacherApi.sessions.list(), []);
+  const cohortsResult = useFetch(() => teacherApi.cohorts.list(), []);
+  const catalogResult = useFetch(() => teacherApi.catalog.get(), []);
 
   const { data: sessions, loading, reload } = sessionsResult;
   const cohorts = cohortsResult.data.filter(alive);
-  const levels = levelsResult.data.filter(alive);
-  const courses = coursesResult.data.filter(alive);
+  const levels = (catalogResult.single?.levels ?? []).filter(alive);
+  const courses = (catalogResult.single?.courses ?? []).filter(alive);
 
   const [cohortFilter, setCohortFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -133,10 +132,10 @@ const TeacherSessionsPage = () => {
         status: values.status,
       };
       if (modal?.mode === "edit") {
-        await sessionsApi.update(modal.session.id, payload);
+        await teacherApi.sessions.update(modal.session.id, payload);
         toast("success", "تم تحديث الجلسة.");
       } else {
-        await sessionsApi.create(payload);
+        await teacherApi.sessions.create(payload);
         toast("success", "تمت إضافة الجلسة.");
       }
       setModal(null);
@@ -150,7 +149,7 @@ const TeacherSessionsPage = () => {
   const changeStatus = async () => {
     if (!confirmTarget) return;
     try {
-      await sessionsApi.update(confirmTarget.session.id, {
+      await teacherApi.sessions.update(confirmTarget.session.id, {
         status: confirmTarget.nextStatus,
       });
       toast(

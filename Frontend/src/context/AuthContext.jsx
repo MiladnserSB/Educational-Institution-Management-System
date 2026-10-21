@@ -26,7 +26,8 @@ const readStoredUser = () => {
  * - login({ token, user }) from POST /api/auth/login
  * - the session is persisted in localStorage and restored on load
  * - logout() clears the session
- * - updateUser(patch) keeps the local profile in sync after PUT /api/users/:id
+ * - updateUser(patch) keeps the local profile in sync after the
+ *   role-scoped profile update (PUT /api/student/me, /api/admin/users/:id …)
  */
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() =>

@@ -5,7 +5,7 @@ const EMPTY = Object.freeze([]);
 /**
  * Generic data-fetching hook.
  *
- * const { data, loading, error, reload } = useFetch(() => usersApi.list(), []);
+ * const { data, loading, error, reload } = useFetch(() => adminApi.users.list(), []);
  *
  * - `data` defaults to a stable empty array so list rendering and effects
  *   never need null checks (and never re-trigger on reference changes).
@@ -51,7 +51,11 @@ export default function useFetch(fetcher, deps = []) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, version]);
 
-  const rows = Array.isArray(data) ? data : (data ?? EMPTY);
+  const rows = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.items)
+      ? data.items
+      : EMPTY;
 
   return { data: rows, single: data, loading, error, reload };
 }

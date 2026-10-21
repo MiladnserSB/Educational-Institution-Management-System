@@ -64,3 +64,12 @@ export const loginUserSchema = z.object({
 });
 
 export const toggleActiveSchema = z.object({ isActive: z.boolean() });
+
+/** الطالب يعدّل بياناته الشخصية فقط (لا الدور ولا حالة الحساب). */
+export const updateSelfSchema = z
+  .object({
+    fullName: z.string().min(2).max(100).optional(),
+    phone: z.string().min(6).max(20).optional(),
+    bio: z.string().max(500).optional(),
+  })
+  .strict();

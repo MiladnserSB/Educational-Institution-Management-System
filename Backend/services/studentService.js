@@ -5,6 +5,8 @@ import Session from "../models/sessionModel.js";
 import Attendance from "../models/attendanceModel.js";
 import EnrollmentResult from "../models/enrollmentResultModel.js";
 import StudentNote from "../models/studentNoteModel.js";
+import Course from "../models/courseModel.js";
+import Level from "../models/levelModel.js";
 import AppError from "../utils/AppError.js";
 
 const PRESENT = ["present", "late", "excused"];
@@ -79,7 +81,7 @@ export const listMyCohorts = async (studentId) => {
 
   const [cohorts, sessions, results, attendances] = await Promise.all([
     Cohort.find({ _id: { $in: cohortIds }, deletedAt: null })
-      .populate("levelId", "title")
+      .populate("levelId", "title courseId")
       .populate("teacherId", "fullName")
       .lean(),
     Session.find({ cohortId: { $in: cohortIds } }).lean(),
@@ -93,10 +95,28 @@ export const listMyCohorts = async (studentId) => {
   const cohortMap = Object.fromEntries(cohorts.map((c) => [String(c._id), c]));
   const now = new Date();
 
+  // أسماء الدورات والمستويات لعرضها في الواجهة
+  const levelIds = [
+    ...new Set(cohorts.map((c) => String(c.levelId?._id ?? c.levelId))),
+  ].filter((id) => id && id !== "undefined");
+  const levels = await Level.find({ _id: { $in: levelIds } }).lean();
+  const courseIds = [
+    ...new Set(levels.map((l) => String(l.courseId))),
+  ].filter((id) => id && id !== "undefined");
+  const courses = await Course.find({ _id: { $in: courseIds } }).lean();
+
+  const levelMap = Object.fromEntries(levels.map((l) => [String(l._id), l]));
+  const courseMap = Object.fromEntries(
+    courses.map((c) => [String(c._id), c]),
+  );
+
   return enrollments
     .filter((e) => cohortMap[String(e.cohortId)]) // تجاهل دفعات محذوفة
     .map((e) => {
       const cohort = cohortMap[String(e.cohortId)];
+      const levelId = String(cohort.levelId?._id ?? cohort.levelId);
+      const level = levelMap[levelId];
+      const course = level ? courseMap[String(level.courseId)] : null;
       const cSessions = sessions.filter(
         (s) => String(s.cohortId) === String(e.cohortId),
       );
@@ -120,7 +140,12 @@ export const listMyCohorts = async (studentId) => {
         enrollmentId: String(e._id),
         cohortId: String(e.cohortId),
         code: cohort.code,
-        levelTitle: cohort.levelId?.title || "",
+        status: cohort.status,
+        levelId,
+        levelTitle: cohort.levelId?.title || level?.title || "",
+        courseId: level ? String(level.courseId) : "",
+        courseName: course?.name || "",
+        teacherId: String(cohort.teacherId?._id ?? cohort.teacherId),
         teacherName: cohort.teacherId?.fullName || "",
         sessionsDone: doneSessions.length,
         sessionsTotal: cSessions.length,
@@ -136,6 +161,70 @@ export const listMyCohorts = async (studentId) => {
           : null,
       };
     });
+};
+
+/**
+ * كتالوج الطالب: الدورات المعتمدة ومستوياتها (لاستكشاف الدورات).
+ */
+export const listMyCatalog = async () => {
+  const courses = await Course.find({
+    isActive: true,
+    deletedAt: null,
+  })
+    .sort("name")
+    .lean();
+
+  const courseIds = courses.map((c) => String(c._id));
+  const levels = await Level.find({
+    courseId: { $in: courseIds },
+    deletedAt: null,
+  })
+    .sort("orderNumber")
+    .lean();
+
+  return {
+    courses: courses.map((c) => ({
+      id: String(c._id),
+      _id: c._id,
+      name: c.name,
+      description: c.description,
+      isActive: c.isActive,
+      createdAt: c.createdAt,
+    })),
+    levels: levels.map((l) => ({
+      id: String(l._id),
+      _id: l._id,
+      title: l.title,
+      courseId: String(l.courseId),
+      orderNumber: l.orderNumber,
+      isActive: l.isActive,
+    })),
+  };
+};
+
+/**
+ * تحديث ملف الطالب الشخصي (لنفسه فقط).
+ */
+export const updateProfile = async (studentId, data) => {
+  const student = await User.findOneAndUpdate(
+    { _id: studentId, role: "student", deletedAt: null },
+    data,
+    { new: true, runValidators: true },
+  ).lean();
+
+  if (!student) throw new AppError("Student not found", 404);
+
+  return {
+    id: String(student._id),
+    fullName: student.fullName,
+    email: student.email,
+    phone: student.phone,
+    study: student.study || "",
+    birthDate: student.birthDate,
+    role: student.role,
+    isActive: student.isActive,
+    createdAt: student.createdAt,
+  };
 };
 
 /* ============================================================

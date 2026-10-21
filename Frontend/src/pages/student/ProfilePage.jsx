@@ -10,8 +10,23 @@ import Badge, { accountStatusBadge } from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
 import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
-import { usersApi, enrollmentsApi } from "../../services/api";
+import { studentApi } from "../../services/studentApi";
 import { formatDate, roleLabel } from "../../utils";
+
+/** Row of a labelled piece of information (module scope for fast refresh). */
+const InfoRow = ({ icon: Icon, label, value, ltr }) => (
+  <div className="flex items-center gap-3 rounded-lg border border-border px-4 py-3">
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-canvas text-muted">
+      <Icon className="h-4 w-4" />
+    </span>
+    <div className="min-w-0">
+      <p className="text-xs text-muted">{label}</p>
+      <p className={`truncate text-sm font-medium text-ink ${ltr ? "ltr" : ""}`}>
+        {value}
+      </p>
+    </div>
+  </div>
+);
 
 const ProfilePage = () => {
   const { user, updateUser } = useAuth();
@@ -25,16 +40,29 @@ const ProfilePage = () => {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // GET /api/student/me holds the full profile of the signed-in student.
+  const profileResult = useFetch(() => studentApi.me(), []);
+  const profile = profileResult.single;
+
   // Active enrollment count for the profile card.
-  const enrollmentsResult = useFetch(() => enrollmentsApi.list(), []);
+  const enrollmentsResult = useFetch(() => studentApi.cohorts.list(), []);
   const enrollmentCount = enrollmentsResult.data.filter(
-    (record) => record.studentId === user?.id && record.status === "active",
+    (record) => record.status !== "withdrawn",
   ).length;
 
   if (!user) return null;
 
+  const displayName = profile?.fullName || user.fullName;
+  const email = profile?.email || user.email;
+  const phone = profile?.phone || user.phone;
+  const study = profile?.study || user.study;
+  const birthDate = profile?.birthDate || user.birthDate;
+
   const openEdit = () => {
-    setForm({ fullName: user.fullName || "", phone: user.phone || "" });
+    setForm({
+      fullName: profile?.fullName || user.fullName || "",
+      phone: profile?.phone || user.phone || "",
+    });
     setError("");
     setEditOpen(true);
   };
@@ -45,9 +73,13 @@ const ProfilePage = () => {
       setError("الاسم الكامل مطلوب.");
       return;
     }
+    if (String(form.phone || "").trim().length < 6) {
+      setError("رقم الجوال يجب ألا يقل عن 6 أحرف.");
+      return;
+    }
     setSaving(true);
     try {
-      await usersApi.update(user.id, {
+      await studentApi.updateMe({
         fullName: form.fullName.trim(),
         phone: form.phone.trim(),
       });
@@ -57,6 +89,7 @@ const ProfilePage = () => {
       });
       toast("success", "تم تحديث الملف الشخصي.");
       setEditOpen(false);
+      profileResult.reload();
     } catch (err) {
       setError(err.message);
       toast("error", err.message);
@@ -64,20 +97,6 @@ const ProfilePage = () => {
       setSaving(false);
     }
   };
-
-  const InfoRow = ({ icon: Icon, label, value, ltr }) => (
-    <div className="flex items-center gap-3 rounded-lg border border-border px-4 py-3">
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-canvas text-muted">
-        <Icon className="h-4 w-4" />
-      </span>
-      <div className="min-w-0">
-        <p className="text-xs text-muted">{label}</p>
-        <p className={`truncate text-sm font-medium text-ink ${ltr ? "ltr" : ""}`}>
-          {value}
-        </p>
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6">
@@ -95,11 +114,11 @@ const ProfilePage = () => {
       <div className="grid gap-5 lg:grid-cols-3">
         <Card className="p-6">
           <div className="flex flex-col items-center text-center">
-            <Avatar name={user.fullName} seed={user.id} size="lg" />
+            <Avatar name={displayName} seed={user.id} size="lg" />
             <h2 className="mt-3 text-lg font-extrabold text-ink">
-              {user.fullName}
+              {displayName}
             </h2>
-            <p className="ltr mt-1 text-sm text-muted">{user.email}</p>
+            <p className="ltr mt-1 text-sm text-muted">{email}</p>
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
               <Badge tone="blue">{roleLabel[user.role] || user.role}</Badge>
               {accountStatusBadge(user.isActive)}
@@ -110,8 +129,16 @@ const ProfilePage = () => {
                 <span className="font-semibold text-ink">{enrollmentCount}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted">تاريخ الانضمام</span>
-                <span className="text-ink">{formatDate(user.createdAt)}</span>
+                <span className="text-muted">نسبة الحضور</span>
+                <span className="font-semibold text-ink">
+                  {profile?.attendance ?? 0}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted">متوسط الدرجات</span>
+                <span className="font-semibold text-ink">
+                  {profile?.average ?? 0}
+                </span>
               </div>
             </div>
           </div>
@@ -123,48 +150,22 @@ const ProfilePage = () => {
               <InfoRow
                 icon={Mail}
                 label="البريد الإلكتروني"
-                value={user.email}
+                value={email}
                 ltr
               />
-              <InfoRow
-                icon={Phone}
-                label="رقم الجوال"
-                value={user.phone || "—"}
-                ltr
-              />
+              <InfoRow icon={Phone} label="رقم الجوال" value={phone || "—"} ltr />
               <InfoRow
                 icon={CalendarDays}
                 label="تاريخ الميلاد"
-                value={formatDate(user.birthDate)}
+                value={formatDate(birthDate)}
               />
               <InfoRow
                 icon={BookOpen}
                 label="المسار الدراسي"
-                value={user.study || "—"}
+                value={study || "—"}
               />
             </div>
           </Card>
-
-          {user.specialization && (
-            <Card title="البيانات التدريبية">
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-xs text-muted">التخصص</p>
-                  <p className="mt-1 font-medium text-ink">
-                    {user.specialization}
-                  </p>
-                </div>
-                {user.bio && (
-                  <div>
-                    <p className="text-xs text-muted">نبذة</p>
-                    <p className="mt-1 leading-relaxed text-ink/85">
-                      {user.bio}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </Card>
-          )}
         </div>
       </div>
 
@@ -190,6 +191,7 @@ const ProfilePage = () => {
           <Input
             label="رقم الجوال"
             type="tel"
+            required
             placeholder="05xxxxxxxx"
             className="ltr"
             value={form.phone}

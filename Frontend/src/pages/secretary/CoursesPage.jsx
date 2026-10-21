@@ -22,13 +22,7 @@ import Avatar from "../../components/common/Avatar";
 import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
 import { useToast } from "../../context/ToastContext";
-import {
-  coursesApi,
-  levelsApi,
-  cohortsApi,
-  enrollmentsApi,
-  usersApi,
-} from "../../services/api";
+import { secretaryApi } from "../../services/secretaryApi";
 import {
   alive,
   byId,
@@ -83,11 +77,11 @@ const LevelModal = ({ open, target, formKey, onCancel, onSubmit }) => (
 const CoursesPage = () => {
   const { toast } = useToast();
 
-  const coursesResult = useFetch(() => coursesApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const enrollmentsResult = useFetch(() => enrollmentsApi.list(), []);
-  const usersResult = useFetch(() => usersApi.list(), []);
+  const coursesResult = useFetch(() => secretaryApi.courses.list(), []);
+  const levelsResult = useFetch(() => secretaryApi.levels.list(), []);
+  const cohortsResult = useFetch(() => secretaryApi.cohorts.list(), []);
+  const enrollmentsResult = useFetch(() => secretaryApi.enrollments.list(), []);
+  const usersResult = useFetch(() => secretaryApi.users.list(), []);
 
   const { data: courses, loading: coursesLoading, reload: reloadCourses } = coursesResult;
   const { data: levels, reload: reloadLevels } = levelsResult;
@@ -120,7 +114,7 @@ const CoursesPage = () => {
 
   const submitCourse = async (values) => {
     try {
-      await coursesApi.create({
+      await secretaryApi.courses.create({
         name: String(values.name).trim(),
         description: String(values.description || "").trim(),
         // New course requests await admin approval.
@@ -139,13 +133,13 @@ const CoursesPage = () => {
     if (!levelTarget) return;
     try {
       if (levelTarget.level) {
-        await levelsApi.update(levelTarget.level.id, {
+        await secretaryApi.levels.update(levelTarget.level.id, {
           title: String(values.title).trim(),
           orderNumber: Number(values.orderNumber) || 1,
         });
         toast("success", "تم تحديث المستوى.");
       } else {
-        await levelsApi.create({
+        await secretaryApi.levels.create({
           courseId: levelTarget.courseId,
           title: String(values.title).trim(),
           orderNumber: Number(values.orderNumber) || 1,

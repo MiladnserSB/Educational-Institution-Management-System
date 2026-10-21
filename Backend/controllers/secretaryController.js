@@ -1,8 +1,11 @@
 import * as userService from "../services/userService.js";
-import * as courseService from "../services/CourseService.js";
-import * as levelService from "../services/LevelService.js";
-import * as cohortService from "../services/CohortService.js";
+import * as courseService from "../services/courseService.js";
+import * as levelService from "../services/levelService.js";
+import * as cohortService from "../services/cohortService.js";
+import * as sessionService from "../services/sessionService.js";
 import * as enrollmentsSvc from "../services/enrollmentService.js";
+import * as attendanceSvc from "../services/attendanceService.js";
+import * as resultsSvc from "../services/resultService.js";
 import * as notesSvc from "../services/noteService.js";
 import * as statsSvc from "../services/secretaryService.js";
 import {catchAsync, ok, created} from "../utils/lib.js";
@@ -107,6 +110,11 @@ export const listCohortEnrollments = catchAsync(async (req, res) =>
 /* ============================================================
  * Enrollments
  * ============================================================ */
+export const listEnrollments = catchAsync(async (req, res) => {
+  const items = await enrollmentsSvc.listEnrollments(req.query);
+  ok(res, { items, meta: { total: items.length } });
+});
+
 export const createEnrollment = catchAsync(async (req, res) =>
   created(res, await enrollmentsSvc.createEnrollment(req.body)),
 );
@@ -123,6 +131,29 @@ export const listStudentsNotInCohort = catchAsync(async (req, res) => {
   const { notIn } = req.query;
   if (!notIn) throw new AppError("notIn (cohortId) is required", 400);
   ok(res, await enrollmentsSvc.listStudentsNotInCohort(notIn));
+});
+
+/* ============================================================
+ * Sessions
+ * ============================================================ */
+export const listSessions = catchAsync(async (req, res) => {
+  const { items, meta } = await sessionService.listAllSessions(req.query);
+  ok(res, { items, meta });
+});
+
+/* ============================================================
+ * Attendance (read-only overview for the secretary)
+ * ============================================================ */
+export const listAttendances = catchAsync(async (req, res) =>
+  ok(res, await attendanceSvc.listAllAttendance(req.query)),
+);
+
+/* ============================================================
+ * Results (read-only overview for the secretary)
+ * ============================================================ */
+export const listResults = catchAsync(async (req, res) => {
+  const { items, meta } = await resultsSvc.listAllResults(req.query);
+  ok(res, { items, meta });
 });
 
 /* ============================================================

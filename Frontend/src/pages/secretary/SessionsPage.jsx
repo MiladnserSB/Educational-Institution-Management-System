@@ -9,7 +9,7 @@ import Avatar from "../../components/common/Avatar";
 import Badge, { sessionStatusBadge } from "../../components/common/Badge";
 import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
-import { sessionsApi, cohortsApi, levelsApi, coursesApi, usersApi } from "../../services/api";
+import { secretaryApi } from "../../services/secretaryApi";
 import {
   alive,
   byId,
@@ -25,11 +25,11 @@ const STATUS_OPTIONS = [
 ];
 
 const SecretarySessionsPage = () => {
-  const sessionsResult = useFetch(() => sessionsApi.list(), []);
-  const cohortsResult = useFetch(() => cohortsApi.list(), []);
-  const levelsResult = useFetch(() => levelsApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
-  const usersResult = useFetch(() => usersApi.list(), []);
+  const sessionsResult = useFetch(() => secretaryApi.sessions.list(), []);
+  const cohortsResult = useFetch(() => secretaryApi.cohorts.list(), []);
+  const levelsResult = useFetch(() => secretaryApi.levels.list(), []);
+  const coursesResult = useFetch(() => secretaryApi.courses.list(), []);
+  const usersResult = useFetch(() => secretaryApi.users.list(), []);
 
   const { data: sessions, loading } = sessionsResult;
   const cohorts = cohortsResult.data.filter(alive);
@@ -224,9 +224,7 @@ const SecretarySessionsPage = () => {
                 const course = cohort
                   ? courseForCohort(courses, levels, cohort)
                   : undefined;
-                const teacher = cohort
-                  ? byId(allUsers, cohort.teacherId)
-                  : undefined;
+                const teacher = cohort ? byId(allUsers, cohort.teacherId) : undefined;
                 return (
                   <div className="mt-1.5 space-y-1">
                     <p className="ltr text-sm font-semibold text-ink">

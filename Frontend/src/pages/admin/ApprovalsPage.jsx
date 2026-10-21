@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BookOpen, Users, CheckCircle2, XCircle } from "lucide-react";
+import { BookOpen, Users, CheckCircle2 } from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
@@ -10,7 +10,7 @@ import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { approvalBadge } from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
 import { useToast } from "../../context/ToastContext";
-import { usersApi, coursesApi } from "../../services/api";
+import { adminApi } from "../../services/adminApi";
 import { alive, formatDate } from "../../utils";
 
 const ApprovalsPage = () => {
@@ -18,8 +18,8 @@ const ApprovalsPage = () => {
   const [tab, setTab] = useState("courses");
   const [rejectTarget, setRejectTarget] = useState(null);
 
-  const usersResult = useFetch(() => usersApi.list(), []);
-  const coursesResult = useFetch(() => coursesApi.list(), []);
+  const usersResult = useFetch(() => adminApi.users.list(), []);
+  const coursesResult = useFetch(() => adminApi.courses.list(), []);
 
   const users = usersResult.data.filter(alive);
   const courses = coursesResult.data.filter(alive);
@@ -36,16 +36,11 @@ const ApprovalsPage = () => {
     if (!rejectTarget) return;
     const { kind, record } = rejectTarget;
     try {
+      // Rejecting closes the request with a soft delete.
       if (kind === "course") {
-        await coursesApi.update(record.id, {
-          isActive: false,
-          deletedAt: new Date().toISOString(),
-        });
+        await adminApi.courses.remove(record.id);
       } else {
-        await usersApi.update(record.id, {
-          isActive: false,
-          deletedAt: new Date().toISOString(),
-        });
+        await adminApi.users.remove(record.id);
       }
       toast("warning", "تم رفض الطلب.");
       usersResult.reload();
@@ -58,15 +53,9 @@ const ApprovalsPage = () => {
   const approve = async (kind, record) => {
     try {
       if (kind === "course") {
-        await coursesApi.update(record.id, {
-          isActive: true,
-          deletedAt: null,
-        });
+        await adminApi.approvals.approve("courses", record.id);
       } else {
-        await usersApi.update(record.id, {
-          isActive: true,
-          deletedAt: null,
-        });
+        await adminApi.approvals.approve("users", record.id);
       }
       toast("success", "تمت الموافقة على الطلب.");
       usersResult.reload();
