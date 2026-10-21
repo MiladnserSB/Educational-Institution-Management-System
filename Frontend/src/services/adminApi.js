@@ -71,9 +71,11 @@ export const adminApi = {
 
   /* --------------------------------- reports -------------------------------- */
   reports: {
-    overview: (query) => unwrapOne(api.get("/admin/reports/overview", { query })),
+    overview: (query) =>
+      unwrapOne(api.get("/admin/reports/overview", { query })),
     cohort: (id) => unwrapOne(api.get(`/admin/reports/cohorts/${id}`)),
-    exportJson: (query) => unwrapOne(api.get("/admin/reports/export", { query })),
+    exportJson: (query) =>
+      unwrapOne(api.get("/admin/reports/export", { query })),
   },
 };
 

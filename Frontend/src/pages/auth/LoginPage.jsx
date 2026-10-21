@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, ArrowLeft } from "lucide-react";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
@@ -131,6 +131,21 @@ const LoginPage = () => {
               دخول
             </Button>
           </form>
+          <p className="mt-6 text-center text-sm text-muted">
+            ليس لديك حساب؟{" "}
+            <Link
+              to="/register"
+              className="font-semibold text-brand-blue transition hover:text-ink"
+            >
+              أنشئ حساباً جديداً
+            </Link>
+          </p>
+          <Link
+            to="/"
+            className="mt-4 block text-center text-xs text-muted transition hover:text-ink"
+          >
+            العودة إلى الصفحة الرئيسية
+          </Link>
         </div>
       </div>
     </div>

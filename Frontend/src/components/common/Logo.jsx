@@ -8,28 +8,12 @@ import { classNames } from "../../utils";
  */
 const Logo = ({ variant = "full", className = "", onLight = false }) => {
   const mark = (
-    <svg viewBox="0 0 64 64" fill="none" className="h-9 w-9 shrink-0">
-      <rect width="64" height="64" rx="14" fill="#1572FE" />
-      <path
-        d="M17 17a3 3 0 0 1 3-3h16l8 8v20a3 3 0 0 1-3 3H20a3 3 0 0 1-3-3V17z"
-        fill="#FBFCFE"
-      />
-      <path d="M36 14v8h8" fill="#D6E4FF" />
-      <path
-        d="M24 31h13M24 36h13M24 41h8"
-        stroke="#1572FE"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-      />
-      <circle cx="46" cy="46" r="11" fill="#EEAC5C" />
-      <path
-        d="M41.5 46.5l3.2 3.2 6.3-7"
-        stroke="#292940"
-        strokeWidth="3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <img
+      src="/EduMS%20Learning%20Logo%20(1).png"
+      alt={variant === "compact" ? "EDUMS" : ""}
+      aria-hidden={variant !== "compact"}
+      className="h-11 w-11 shrink-0 rounded-xl bg-white object-contain p-0.5"
+    />
   );
 
   if (variant === "compact") return <span className={className}>{mark}</span>;

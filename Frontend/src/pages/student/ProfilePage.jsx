@@ -112,7 +112,7 @@ const ProfilePage = () => {
       />
 
       <div className="grid gap-5 lg:grid-cols-3">
-        <Card className="p-6">
+        <Card>
           <div className="flex flex-col items-center text-center">
             <Avatar name={displayName} seed={user.id} size="lg" />
             <h2 className="mt-3 text-lg font-extrabold text-ink">

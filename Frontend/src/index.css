@@ -10,20 +10,32 @@
   --color-amber: #eeac5c;
   --color-lavender: #c08cee;
 
-  /* Note: Ensure these missing variables are defined if you intend to use them */
   --color-brand-blue: #1572fe;
+  --color-brand-amber: var(--color-amber);
+  --color-brand-lavender: var(--color-lavender);
   --color-muted: #6b7280;
+  --color-success-50: color-mix(in srgb, var(--color-success-500) 10%, white);
   --color-success-500: #22c55e;
   --color-success-600: #16a34a;
+  --color-success-700: var(--color-success-600);
+  --color-error-50: color-mix(in srgb, var(--color-error-500) 8%, white);
   --color-error-500: #ef4444;
   --color-error-600: #dc2626;
   --color-error-700: #b91c1c;
+  --color-warning-50: color-mix(in srgb, var(--color-warning-600) 10%, white);
+  --color-warning-500: var(--color-warning-600);
   --color-warning-600: #d97706;
+  --color-warning-700: var(--color-warning-600);
+  --color-info-50: color-mix(in srgb, var(--color-brand-blue) 8%, white);
+  --color-info-600: var(--color-brand-blue);
+  --color-info-700: var(--color-brand-blue);
 
-  --radius-btn: 0.375rem;
-  --radius-card: 0.5rem;
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1);
-  --shadow-pop: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --font-sans: "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-kufi: "Noto Sans Arabic", "Segoe UI", Tahoma, Arial, sans-serif;
+  --radius-btn: 0.625rem;
+  --radius-card: 0.875rem;
+  --shadow-card: 0 1px 2px 0 rgb(41 41 64 / 0.04), 0 4px 12px -4px rgb(41 41 64 / 0.08);
+  --shadow-pop: 0 12px 32px -8px rgb(41 41 64 / 0.18);
   --animate-fadeIn: fadeIn 0.2s ease-out both;
   --animate-slideUp: slideUp 0.2s ease-out both;
   --animate-slideIn: slideIn 0.2s ease-out both;
@@ -63,12 +75,14 @@
 /* 3. Base Styles (Simply drop the old @layer base wrapper) */
 html {
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
   @apply bg-canvas text-ink font-sans antialiased;
   font-feature-settings: "ss01", "cv01";
   text-rendering: optimizeLegibility;
+  line-height: 1.55;
   margin: 0;
 }
 
@@ -76,8 +90,34 @@ body {
   @apply border-border;
 }
 
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
 :focus-visible {
   @apply outline-none ring-2 ring-brand-blue ring-offset-2 ring-offset-canvas;
+}
+
+.scrollbar-thin {
+  scrollbar-color: var(--color-border) transparent;
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background-color: var(--color-border);
 }
 
 .ltr {
@@ -85,305 +125,280 @@ body {
   unicode-bidi: isolate;
 }
 
-/* 4. Custom Utilities & Component Styles (Use the @utility directive instead of @layer) */
-
-/* ---------------- Button ---------------- */
-@utility ui-button {
-  @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-btn font-medium transition-colors;
-
-  &:disabled {
-    @apply pointer-events-none opacity-50;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
-  &--sm {
+}
+
+/* 4. Shared component styles */
+@layer components {
+  .ui-button {
+    @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-btn font-medium transition-colors;
+
+    &:disabled {
+      @apply pointer-events-none opacity-50;
+    }
+  }
+  .ui-button--sm {
     @apply h-8 rounded-lg px-3 text-xs;
   }
-  &--md {
+  .ui-button--md {
     @apply h-10 px-4 text-sm;
   }
-  &--lg {
+  .ui-button--lg {
     @apply h-11 px-5 text-sm;
   }
-  &--full {
+  .ui-button--full {
     @apply w-full;
   }
-  &--primary {
+  .ui-button--primary {
     @apply bg-brand-blue text-white shadow-sm hover:bg-blue-600;
   }
-  &--secondary {
+  .ui-button--secondary {
     @apply bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/15;
   }
-  &--outline {
+  .ui-button--outline {
     @apply border border-border bg-white text-ink hover:border-muted/40 hover:bg-canvas;
   }
-  &--ghost {
-    @apply text-ink hover:bg-border/60;
-    &:active {
-      @apply bg-error-700; /* Or define a distinct success color like bg-success-700 if intended */
-    }
+  .ui-button--ghost {
+    @apply text-ink hover:bg-border/60 active:bg-border;
   }
-  &--danger {
-    @apply bg-error-500 text-white shadow-sm hover:bg-error-600;
-    &:active {
-      @apply bg-error-700; /* Or define a distinct success color like bg-success-700 if intended */
-    }
+  .ui-button--danger {
+    @apply bg-error-500 text-white shadow-sm hover:bg-error-600 active:bg-error-700;
   }
-  &--success {
-    @apply bg-success-500 text-white shadow-sm hover:bg-error-600;
-    &:active {
-      @apply bg-error-700; /* Or define a distinct success color like bg-success-700 if intended */
-    }
+  .ui-button--success {
+    @apply bg-success-500 text-white shadow-sm hover:bg-success-600 active:bg-success-700;
   }
-}
 
-@utility ui-spinner {
-  @apply inline-block h-4 w-4 shrink-0 rounded-full border-2 border-current border-r-transparent;
-  animation: ui-spin 0.65s linear infinite;
-}
+  .ui-spinner {
+    @apply inline-block h-4 w-4 shrink-0 rounded-full border-2 border-current border-r-transparent;
+    animation: ui-spin 0.65s linear infinite;
+  }
 
-/* ---------------- Card ---------------- */
-@utility ui-card {
-  @apply rounded-card border border-border bg-white shadow-card;
-
-  &-header {
+  .ui-card {
+    @apply rounded-card border border-border bg-white shadow-card;
+  }
+  .ui-card-header {
     @apply flex items-start justify-between gap-3 border-b border-border px-5 py-4;
   }
-  &-title {
+  .ui-card-title {
     @apply truncate text-sm font-bold text-ink;
   }
-  &-subtitle {
+  .ui-card-subtitle {
     @apply mt-0.5 truncate text-xs text-muted;
   }
-  &-action {
+  .ui-card-action {
     @apply shrink-0;
   }
-  &-body {
+  .ui-card-body {
     @apply text-sm;
   }
-  &-footer {
+  .ui-card-footer {
     @apply border-t border-border bg-canvas px-5 py-3.5;
   }
-  &--md > .ui-card-body {
+  .ui-card--md > .ui-card-body {
     @apply p-5;
   }
-  &--sm > .ui-card-body {
+  .ui-card--sm > .ui-card-body {
     @apply p-3.5;
   }
-  &--none > .ui-card-body {
+  .ui-card--none > .ui-card-body {
     @apply p-0;
   }
-}
 
-/* ---------------- Fields / Input ---------------- */
-@utility ui-field {
-  @apply min-w-0;
-}
-@utility ui-label {
-  @apply mb-1.5 block text-sm font-medium text-ink;
-}
-@utility ui-required {
-  @apply text-error-500;
-}
-@utility ui-input-wrap {
-  @apply relative flex;
-}
-@utility ui-input {
-  @apply block w-full rounded-btn border border-border bg-white px-3.5 py-2.5 text-sm text-ink transition placeholder:text-muted/70 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/30;
-
-  &--error {
+  .ui-field {
+    @apply min-w-0;
+  }
+  .ui-label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  .ui-required {
+    @apply text-error-500;
+  }
+  .ui-input-wrap {
+    @apply relative flex;
+  }
+  .ui-input {
+    @apply block w-full rounded-btn border border-border bg-white px-3.5 py-2.5 text-sm text-ink transition placeholder:text-muted/70 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/30;
+  }
+  .ui-input--error {
     @apply border-error-500 focus:border-error-500 focus:ring-error-500/20;
   }
-}
-
-select.ui-input {
-  @apply appearance-none bg-no-repeat;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-position: left 0.75rem center;
-  padding-left: 2.25rem;
-}
-textarea.ui-input {
-  @apply min-h-[90px] resize-y;
-}
-
-@utility ui-input-affix {
-  @apply pointer-events-none absolute inset-y-0 flex items-center text-muted;
-}
-@utility ui-input-wrap--affix {
-  & .ui-input-affix:first-child {
+  select.ui-input {
+    @apply appearance-none bg-no-repeat;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem;
+    padding-left: 0.875rem;
+  }
+  textarea.ui-input {
+    @apply min-h-[90px] resize-y;
+  }
+  .ui-input-affix {
+    @apply pointer-events-none absolute inset-y-0 flex items-center text-muted;
+  }
+  .ui-input-wrap--affix .ui-input-affix:first-child {
     @apply start-0.5 ps-3;
   }
-  & .ui-input-affix:last-child {
+  .ui-input-wrap--affix .ui-input-affix:last-child {
     @apply end-0.5 pe-3;
   }
-  & .ui-input {
+  .ui-input-wrap--affix .ui-input {
     padding-inline-start: 2.5rem;
   }
-  & .ui-input-affix:first-child:last-child {
+  .ui-input-wrap--affix .ui-input-affix:first-child:last-child {
     inset-inline-start: auto;
     padding-inline-start: 0;
     inset-inline-end: 0.125rem;
     padding-inline-end: 0.75rem;
   }
-}
+  .ui-field-error {
+    @apply mt-1.5 text-xs text-error-600;
+  }
+  .ui-field-hint {
+    @apply mt-1.5 text-xs text-muted;
+  }
 
-@utility ui-field-error {
-  @apply mt-1.5 text-xs text-error-600;
-}
-@utility ui-field-hint {
-  @apply mt-1.5 text-xs text-muted;
-}
-
-/* ---------------- Filter ---------------- */
-@utility ui-filter {
-  @apply flex flex-wrap items-end gap-3;
-
-  &-search {
+  .ui-filter {
+    @apply flex flex-wrap items-end gap-3;
+  }
+  .ui-filter-search {
     @apply min-w-[220px] flex-1;
   }
-  &-select {
+  .ui-filter-select {
     @apply w-44;
   }
-}
 
-/* ---------------- Form ---------------- */
-@utility ui-form-grid {
-  @apply grid gap-4;
-}
-@utility ui-form--columns-2 {
-  & .ui-form-grid {
+  .ui-form-grid {
+    @apply grid gap-4;
+  }
+  .ui-form--columns-2 .ui-form-grid {
     @apply sm:grid-cols-2;
   }
-}
-@utility ui-form--columns-1 {
-  & .ui-form-grid {
+  .ui-form--columns-1 .ui-form-grid {
     @apply grid-cols-1;
   }
-}
-@utility ui-form--columns-3 {
-  & .ui-form-grid {
+  .ui-form--columns-3 .ui-form-grid {
     @apply sm:grid-cols-3;
   }
-}
-@utility ui-form-field--full {
-  @apply sm:col-span-2;
-}
-@utility ui-form-actions {
-  @apply mt-5 flex items-center justify-end gap-2;
-}
+  .ui-form-field--full {
+    @apply sm:col-span-2;
+  }
+  .ui-form-actions {
+    @apply mt-5 flex items-center justify-end gap-2;
+  }
 
-/* ---------------- Modal ---------------- */
-@utility ui-modal-backdrop {
-  @apply fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-[1px] animate-fadeIn;
-}
-@utility ui-modal {
-  @apply flex max-h-[90vh] w-full flex-col overflow-hidden rounded-card bg-white shadow-pop animate-slideUp;
-
-  &--sm {
+  .ui-modal-backdrop {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-[1px] animate-fadeIn;
+  }
+  .ui-modal {
+    @apply flex max-h-[90vh] w-full flex-col overflow-hidden rounded-card bg-white shadow-pop animate-slideUp;
+  }
+  .ui-modal--sm {
     @apply max-w-md;
   }
-  &--md {
+  .ui-modal--md {
     @apply max-w-lg;
   }
-  &--lg {
+  .ui-modal--lg {
     @apply max-w-2xl;
   }
-  &--xl {
+  .ui-modal--xl {
     @apply max-w-4xl;
   }
-  &-header {
+  .ui-modal-header {
     @apply flex items-start justify-between gap-3 border-b border-border px-6 py-4;
-
-    & h2 {
-      @apply text-base font-bold text-ink;
-    }
-    & p {
-      @apply mt-1 text-sm text-muted;
-    }
   }
-  &-content {
+  .ui-modal-header h2 {
+    @apply text-base font-bold text-ink;
+  }
+  .ui-modal-header p {
+    @apply mt-1 text-sm text-muted;
+  }
+  .ui-modal-content {
     @apply flex-1 overflow-y-auto px-6 py-5;
   }
-  &-footer {
+  .ui-modal-footer {
     @apply flex items-center justify-end gap-2 border-t border-border bg-canvas px-6 py-3.5;
   }
-}
 
-/* ---------------- Table ---------------- */
-@utility ui-table-shell {
-  @apply overflow-hidden rounded-card border border-border bg-white shadow-card;
-}
-@utility ui-table-scroll {
-  @apply overflow-x-auto;
-}
-@utility ui-table {
-  @apply w-full border-collapse text-sm;
-
-  & thead tr {
+  .ui-table-shell {
+    @apply overflow-hidden rounded-card border border-border bg-white shadow-card;
+  }
+  .ui-table-scroll {
+    @apply overflow-x-auto;
+  }
+  .ui-table {
+    @apply w-full border-collapse text-sm;
+  }
+  .ui-table thead tr {
     @apply border-b border-border bg-canvas/60;
   }
-  & th {
+  .ui-table th {
     @apply whitespace-nowrap px-4 py-3 text-right text-xs font-semibold text-muted;
   }
-  & tbody tr {
+  .ui-table tbody tr {
     @apply border-b border-border/60 transition-colors hover:bg-canvas/70;
   }
-  & td {
+  .ui-table td {
     @apply px-4 py-3.5 text-ink/90;
   }
-}
-@utility ui-table-row-clickable {
-  @apply cursor-pointer;
-}
-@utility ui-table-empty {
-  @apply px-4 py-12 text-center text-muted;
-}
-@utility ui-table-pagination {
-  @apply flex items-center justify-between gap-2 border-t border-border px-4 py-3 text-xs text-muted;
-
-  & > div {
+  .ui-table-row-clickable {
+    @apply cursor-pointer;
+  }
+  .ui-table-empty {
+    @apply px-4 py-12 text-center text-muted;
+  }
+  .ui-table-pagination {
+    @apply flex items-center justify-between gap-2 border-t border-border px-4 py-3 text-xs text-muted;
+  }
+  .ui-table-pagination > div {
     @apply flex items-center gap-1;
   }
-  & button {
+  .ui-table-pagination button {
     @apply rounded-lg p-1.5 transition-colors hover:bg-border/60 disabled:pointer-events-none disabled:opacity-40;
   }
-}
 
-/* ---------------- Toast ---------------- */
-@utility ui-toast {
-  @apply flex w-full items-start gap-3 rounded-xl border border-border bg-white p-3.5 shadow-pop animate-slideIn;
-
-  &-mark {
+  .ui-toast {
+    @apply flex w-full items-start gap-3 rounded-xl border border-border bg-white p-3.5 shadow-pop animate-slideIn;
+  }
+  .ui-toast-mark {
     @apply mt-0.5 shrink-0;
   }
-  &-copy {
+  .ui-toast-copy {
     @apply flex-1 pt-0.5;
-
-    & strong {
-      @apply block text-sm font-semibold;
-    }
-    & p {
-      @apply mt-0.5 text-sm text-ink/80 leading-relaxed;
-    }
   }
-  &--success .ui-toast-mark {
+  .ui-toast-copy strong {
+    @apply block text-sm font-semibold;
+  }
+  .ui-toast-copy p {
+    @apply mt-0.5 text-sm leading-relaxed text-ink/80;
+  }
+  .ui-toast--success .ui-toast-mark {
     @apply text-success-600;
   }
-  &--error .ui-toast-mark {
+  .ui-toast--error .ui-toast-mark {
     @apply text-error-600;
   }
-  &--warning .ui-toast-mark {
+  .ui-toast--warning .ui-toast-mark {
     @apply text-warning-600;
   }
-  &--info .ui-toast-mark {
+  .ui-toast--info .ui-toast-mark {
     @apply text-brand-blue;
   }
-}
 
-/* ---------------- Misc ---------------- */
-@utility ui-icon-button {
-  @apply rounded-md p-1.5 text-muted transition-colors hover:bg-border/60 hover:text-ink;
-}
-@utility ui-visually-hidden {
-  @apply absolute h-px w-px overflow-hidden whitespace-nowrap border-0 p-0;
-  clip: rect(0, 0, 0, 0);
-  margin: -1px;
+  .ui-icon-button {
+    @apply rounded-md p-1.5 text-muted transition-colors hover:bg-border/60 hover:text-ink;
+  }
+  .ui-visually-hidden {
+    @apply absolute h-px w-px overflow-hidden whitespace-nowrap border-0 p-0;
+    clip: rect(0, 0, 0, 0);
+    margin: -1px;
+  }
 }

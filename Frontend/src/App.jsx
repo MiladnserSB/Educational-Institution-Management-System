@@ -3,7 +3,9 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ToastProvider } from "./context/ToastContext";
 import Layout from "./components/layout/Layout";
 
+import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/auth/LoginPage";
+import RegisterPage from "./pages/auth/RegisterPage";
 
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ApprovalsPage from "./pages/admin/ApprovalsPage";
@@ -48,9 +50,14 @@ function AppRoutes() {
 
   return (
     <Routes>
+      <Route path="/" element={<HomePage />} />
       <Route
         path="/login"
         element={user ? <Navigate to={`/${user.role}`} replace /> : <LoginPage />}
+      />
+      <Route
+        path="/register"
+        element={user ? <Navigate to={`/${user.role}`} replace /> : <RegisterPage />}
       />
 
       <Route
@@ -115,7 +122,7 @@ function AppRoutes() {
 
       <Route
         path="*"
-        element={<Navigate to={user ? `/${user.role}` : "/login"} replace />}
+        element={<Navigate to={user ? `/${user.role}` : "/"} replace />}
       />
     </Routes>
   );

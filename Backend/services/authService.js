@@ -32,6 +32,12 @@ export const loginUser = async ({ email, password }) => {
     });
   }
 
+  if (!user.isActive) {
+    throw Object.assign(new Error("Account is pending approval"), {
+      status: 403,
+    });
+  }
+
   return {
     user: handleUser(user),
     token: generateToken(user),
