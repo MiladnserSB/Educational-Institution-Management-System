@@ -1,0 +1,389 @@
+/* 1. Import Tailwind v4 correctly */
+@import "tailwindcss";
+
+/* 2. Define your design tokens using the Tailwind v4 @theme directive */
+@theme {
+  --color-canvas: #fbfcfe;
+  --color-ink: #292940;
+  --color-border: #e2e6ee;
+  --color-blue: #1572fe;
+  --color-amber: #eeac5c;
+  --color-lavender: #c08cee;
+
+  /* Note: Ensure these missing variables are defined if you intend to use them */
+  --color-brand-blue: #1572fe;
+  --color-muted: #6b7280;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  --color-warning-600: #d97706;
+
+  --radius-btn: 0.375rem;
+  --radius-card: 0.5rem;
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  --shadow-pop: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+  --animate-fadeIn: fadeIn 0.2s ease-out both;
+  --animate-slideUp: slideUp 0.2s ease-out both;
+  --animate-slideIn: slideIn 0.2s ease-out both;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 3. Base Styles (Simply drop the old @layer base wrapper) */
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-canvas text-ink font-sans antialiased;
+  font-feature-settings: "ss01", "cv01";
+  text-rendering: optimizeLegibility;
+  margin: 0;
+}
+
+* {
+  @apply border-border;
+}
+
+:focus-visible {
+  @apply outline-none ring-2 ring-brand-blue ring-offset-2 ring-offset-canvas;
+}
+
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* 4. Custom Utilities & Component Styles (Use the @utility directive instead of @layer) */
+
+/* ---------------- Button ---------------- */
+@utility ui-button {
+  @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-btn font-medium transition-colors;
+
+  &:disabled {
+    @apply pointer-events-none opacity-50;
+  }
+  &--sm {
+    @apply h-8 rounded-lg px-3 text-xs;
+  }
+  &--md {
+    @apply h-10 px-4 text-sm;
+  }
+  &--lg {
+    @apply h-11 px-5 text-sm;
+  }
+  &--full {
+    @apply w-full;
+  }
+  &--primary {
+    @apply bg-brand-blue text-white shadow-sm hover:bg-blue-600;
+  }
+  &--secondary {
+    @apply bg-brand-blue/10 text-brand-blue hover:bg-brand-blue/15;
+  }
+  &--outline {
+    @apply border border-border bg-white text-ink hover:border-muted/40 hover:bg-canvas;
+  }
+  &--ghost {
+    @apply text-ink hover:bg-border/60;
+    &:active {
+      @apply bg-error-700; /* Or define a distinct success color like bg-success-700 if intended */
+    }
+  }
+  &--danger {
+    @apply bg-error-500 text-white shadow-sm hover:bg-error-600;
+    &:active {
+      @apply bg-error-700; /* Or define a distinct success color like bg-success-700 if intended */
+    }
+  }
+  &--success {
+    @apply bg-success-500 text-white shadow-sm hover:bg-error-600;
+    &:active {
+      @apply bg-error-700; /* Or define a distinct success color like bg-success-700 if intended */
+    }
+  }
+}
+
+@utility ui-spinner {
+  @apply inline-block h-4 w-4 shrink-0 rounded-full border-2 border-current border-r-transparent;
+  animation: ui-spin 0.65s linear infinite;
+}
+
+/* ---------------- Card ---------------- */
+@utility ui-card {
+  @apply rounded-card border border-border bg-white shadow-card;
+
+  &-header {
+    @apply flex items-start justify-between gap-3 border-b border-border px-5 py-4;
+  }
+  &-title {
+    @apply truncate text-sm font-bold text-ink;
+  }
+  &-subtitle {
+    @apply mt-0.5 truncate text-xs text-muted;
+  }
+  &-action {
+    @apply shrink-0;
+  }
+  &-body {
+    @apply text-sm;
+  }
+  &-footer {
+    @apply border-t border-border bg-canvas px-5 py-3.5;
+  }
+  &--md > .ui-card-body {
+    @apply p-5;
+  }
+  &--sm > .ui-card-body {
+    @apply p-3.5;
+  }
+  &--none > .ui-card-body {
+    @apply p-0;
+  }
+}
+
+/* ---------------- Fields / Input ---------------- */
+@utility ui-field {
+  @apply min-w-0;
+}
+@utility ui-label {
+  @apply mb-1.5 block text-sm font-medium text-ink;
+}
+@utility ui-required {
+  @apply text-error-500;
+}
+@utility ui-input-wrap {
+  @apply relative flex;
+}
+@utility ui-input {
+  @apply block w-full rounded-btn border border-border bg-white px-3.5 py-2.5 text-sm text-ink transition placeholder:text-muted/70 focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/30;
+
+  &--error {
+    @apply border-error-500 focus:border-error-500 focus:ring-error-500/20;
+  }
+}
+
+select.ui-input {
+  @apply appearance-none bg-no-repeat;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-position: left 0.75rem center;
+  padding-left: 2.25rem;
+}
+textarea.ui-input {
+  @apply min-h-[90px] resize-y;
+}
+
+@utility ui-input-affix {
+  @apply pointer-events-none absolute inset-y-0 flex items-center text-muted;
+}
+@utility ui-input-wrap--affix {
+  & .ui-input-affix:first-child {
+    @apply start-0.5 ps-3;
+  }
+  & .ui-input-affix:last-child {
+    @apply end-0.5 pe-3;
+  }
+  & .ui-input {
+    padding-inline-start: 2.5rem;
+  }
+  & .ui-input-affix:first-child:last-child {
+    inset-inline-start: auto;
+    padding-inline-start: 0;
+    inset-inline-end: 0.125rem;
+    padding-inline-end: 0.75rem;
+  }
+}
+
+@utility ui-field-error {
+  @apply mt-1.5 text-xs text-error-600;
+}
+@utility ui-field-hint {
+  @apply mt-1.5 text-xs text-muted;
+}
+
+/* ---------------- Filter ---------------- */
+@utility ui-filter {
+  @apply flex flex-wrap items-end gap-3;
+
+  &-search {
+    @apply min-w-[220px] flex-1;
+  }
+  &-select {
+    @apply w-44;
+  }
+}
+
+/* ---------------- Form ---------------- */
+@utility ui-form-grid {
+  @apply grid gap-4;
+}
+@utility ui-form--columns-2 {
+  & .ui-form-grid {
+    @apply sm:grid-cols-2;
+  }
+}
+@utility ui-form--columns-1 {
+  & .ui-form-grid {
+    @apply grid-cols-1;
+  }
+}
+@utility ui-form--columns-3 {
+  & .ui-form-grid {
+    @apply sm:grid-cols-3;
+  }
+}
+@utility ui-form-field--full {
+  @apply sm:col-span-2;
+}
+@utility ui-form-actions {
+  @apply mt-5 flex items-center justify-end gap-2;
+}
+
+/* ---------------- Modal ---------------- */
+@utility ui-modal-backdrop {
+  @apply fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4 backdrop-blur-[1px] animate-fadeIn;
+}
+@utility ui-modal {
+  @apply flex max-h-[90vh] w-full flex-col overflow-hidden rounded-card bg-white shadow-pop animate-slideUp;
+
+  &--sm {
+    @apply max-w-md;
+  }
+  &--md {
+    @apply max-w-lg;
+  }
+  &--lg {
+    @apply max-w-2xl;
+  }
+  &--xl {
+    @apply max-w-4xl;
+  }
+  &-header {
+    @apply flex items-start justify-between gap-3 border-b border-border px-6 py-4;
+
+    & h2 {
+      @apply text-base font-bold text-ink;
+    }
+    & p {
+      @apply mt-1 text-sm text-muted;
+    }
+  }
+  &-content {
+    @apply flex-1 overflow-y-auto px-6 py-5;
+  }
+  &-footer {
+    @apply flex items-center justify-end gap-2 border-t border-border bg-canvas px-6 py-3.5;
+  }
+}
+
+/* ---------------- Table ---------------- */
+@utility ui-table-shell {
+  @apply overflow-hidden rounded-card border border-border bg-white shadow-card;
+}
+@utility ui-table-scroll {
+  @apply overflow-x-auto;
+}
+@utility ui-table {
+  @apply w-full border-collapse text-sm;
+
+  & thead tr {
+    @apply border-b border-border bg-canvas/60;
+  }
+  & th {
+    @apply whitespace-nowrap px-4 py-3 text-right text-xs font-semibold text-muted;
+  }
+  & tbody tr {
+    @apply border-b border-border/60 transition-colors hover:bg-canvas/70;
+  }
+  & td {
+    @apply px-4 py-3.5 text-ink/90;
+  }
+}
+@utility ui-table-row-clickable {
+  @apply cursor-pointer;
+}
+@utility ui-table-empty {
+  @apply px-4 py-12 text-center text-muted;
+}
+@utility ui-table-pagination {
+  @apply flex items-center justify-between gap-2 border-t border-border px-4 py-3 text-xs text-muted;
+
+  & > div {
+    @apply flex items-center gap-1;
+  }
+  & button {
+    @apply rounded-lg p-1.5 transition-colors hover:bg-border/60 disabled:pointer-events-none disabled:opacity-40;
+  }
+}
+
+/* ---------------- Toast ---------------- */
+@utility ui-toast {
+  @apply flex w-full items-start gap-3 rounded-xl border border-border bg-white p-3.5 shadow-pop animate-slideIn;
+
+  &-mark {
+    @apply mt-0.5 shrink-0;
+  }
+  &-copy {
+    @apply flex-1 pt-0.5;
+
+    & strong {
+      @apply block text-sm font-semibold;
+    }
+    & p {
+      @apply mt-0.5 text-sm text-ink/80 leading-relaxed;
+    }
+  }
+  &--success .ui-toast-mark {
+    @apply text-success-600;
+  }
+  &--error .ui-toast-mark {
+    @apply text-error-600;
+  }
+  &--warning .ui-toast-mark {
+    @apply text-warning-600;
+  }
+  &--info .ui-toast-mark {
+    @apply text-brand-blue;
+  }
+}
+
+/* ---------------- Misc ---------------- */
+@utility ui-icon-button {
+  @apply rounded-md p-1.5 text-muted transition-colors hover:bg-border/60 hover:text-ink;
+}
+@utility ui-visually-hidden {
+  @apply absolute h-px w-px overflow-hidden whitespace-nowrap border-0 p-0;
+  clip: rect(0, 0, 0, 0);
+  margin: -1px;
+}
