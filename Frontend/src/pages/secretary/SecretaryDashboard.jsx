@@ -13,9 +13,9 @@ import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
 import StatCard from "../../components/common/StatCard";
 import Spinner from "../../components/common/Spinner";
-import { sessionStatusBadge } from "../../components/common/Badge";
+import { sessionStatusBadge } from "../../components/common/badges";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import { secretaryApi } from "../../services/secretaryApi";
 import {
   alive,

@@ -1,4 +1,5 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
+import { X } from "lucide-react";
 import { classNames, getNotificationPresentation } from "../../utils";
 
 const ToastNotification = ({
@@ -27,7 +28,10 @@ const ToastNotification = ({
       role={presentation.role}
       {...props}
     >
-      <span className="ui-toast-mark" aria-hidden="true">
+      <span
+        className={classNames("ui-toast-mark", `ui-toast-mark-${type}`)}
+        aria-hidden="true"
+      >
         {icon ?? presentation.icon}
       </span>
       <div className="ui-toast-copy">
@@ -36,12 +40,12 @@ const ToastNotification = ({
       </div>
       {onClose && (
         <button
-          className="ui-icon-button"
+          className="ui-icon-button -me-1 -mt-1"
           type="button"
           aria-label={dismissLabel}
           onClick={onClose}
         >
-          ×
+          <X className="h-4 w-4" />
         </button>
       )}
     </div>

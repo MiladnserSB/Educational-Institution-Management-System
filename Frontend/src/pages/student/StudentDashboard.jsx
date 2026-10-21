@@ -14,7 +14,7 @@ import Spinner from "../../components/common/Spinner";
 import EmptyState from "../../components/common/EmptyState";
 import Badge from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../context/auth";
 import { studentApi } from "../../services/studentApi";
 import { formatDate, percentage, toISODate } from "../../utils";
 

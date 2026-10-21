@@ -7,21 +7,23 @@ const EmptyState = ({
   title = "لا توجد بيانات",
   description,
   action,
+  compact = false,
   className = "",
 }) => {
   return (
     <div
       className={classNames(
-        "flex flex-col items-center justify-center rounded-card border border-dashed border-border bg-canvas/50 px-4 py-12 text-center",
+        "flex flex-col items-center justify-center rounded-card border border-dashed border-border bg-canvas/60 text-center",
+        compact ? "px-4 py-8" : "px-6 py-14",
         className,
       )}
     >
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-border/50 text-muted">
-        {icon || <Inbox className="h-7 w-7" />}
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-muted shadow-card">
+        {icon || <Inbox className="h-6 w-6" />}
       </div>
       <h3 className="mt-4 text-sm font-bold text-ink">{title}</h3>
       {description && (
-        <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-muted">
+        <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-muted">
           {description}
         </p>
       )}

@@ -14,14 +14,12 @@ import Button from "../../components/common/Button";
 import Form from "../../components/common/Form";
 import Modal from "../../components/common/Modal";
 import EmptyState from "../../components/common/EmptyState";
-import Badge, {
-  approvalBadge,
-  cohortStatusBadge,
-} from "../../components/common/Badge";
+import { approvalBadge, cohortStatusBadge } from "../../components/common/badges";
+import Badge from "../../components/common/Badge";
 import Avatar from "../../components/common/Avatar";
 import Spinner from "../../components/common/Spinner";
 import useFetch from "../../hooks/useFetch";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 import { secretaryApi } from "../../services/secretaryApi";
 import {
   alive,
@@ -32,20 +30,27 @@ import {
   levelsByCourse,
 } from "../../utils";
 
-const levelFields = [
+const levelSections = [
   {
-    name: "title",
-    label: "عنوان المستوى",
-    required: true,
-    placeholder: "مثال: المستوى المتوسط",
-  },
-  {
-    name: "orderNumber",
-    label: "الترتيب",
-    type: "number",
-    required: true,
-    validate: (value) =>
-      Number(value) > 0 ? undefined : "الترتيب يجب أن يكون موجباً.",
+    title: "بيانات المستوى",
+    description: "العنوان والترتيب داخل الدورة.",
+    icon: <Layers className="h-4 w-4" />,
+    fields: [
+      {
+        name: "title",
+        label: "عنوان المستوى",
+        required: true,
+        placeholder: "مثال: المستوى المتوسط",
+      },
+      {
+        name: "orderNumber",
+        label: "الترتيب",
+        type: "number",
+        required: true,
+        validate: (value) =>
+          Number(value) > 0 ? undefined : "الترتيب يجب أن يكون موجباً.",
+      },
+    ],
   },
 ];
 
@@ -55,6 +60,7 @@ const LevelModal = ({ open, target, formKey, onCancel, onSubmit }) => (
     open={open}
     onClose={onCancel}
     title={target?.level ? "تعديل مستوى" : "إضافة مستوى"}
+    size="sm"
   >
     {open && (
       <Form
@@ -63,8 +69,8 @@ const LevelModal = ({ open, target, formKey, onCancel, onSubmit }) => (
           title: target.level?.title || "",
           orderNumber: target.level?.orderNumber || target.order || 1,
         }}
-        fields={levelFields}
-        columns={2}
+        sections={levelSections}
+        columns={1}
         submitLabel="حفظ"
         cancelLabel="إلغاء"
         onCancel={onCancel}
@@ -243,27 +249,37 @@ const CoursesPage = () => {
           open={courseOpen}
           onClose={() => setCourseOpen(false)}
           title="طلب دورة جديدة"
-          description="سيتم إرسال الطلب إلى الإدارة للاعتماد."
+          description="سيتم إرسال الطلب إلى الإدارة للاعتماد قبل النشر."
+          size="md"
         >
           <Form
             key={`course-${formKey}`}
-            fields={[
+            sections={[
               {
-                name: "name",
-                label: "اسم الدورة",
-                required: true,
-                placeholder: "مثال: أساسيات قواعد البيانات",
-              },
-              {
-                name: "description",
-                label: "الوصف",
-                type: "textarea",
-                required: true,
-                fullWidth: true,
-                rows: 4,
+                title: "بيانات الدورة",
+                description: "اسم الدورة ووصفها المختصر.",
+                icon: <BookOpen className="h-4 w-4" />,
+                fields: [
+                  {
+                    name: "name",
+                    label: "اسم الدورة",
+                    required: true,
+                    placeholder: "مثال: أساسيات قواعد البيانات",
+                    colSpan: 2,
+                  },
+                  {
+                    name: "description",
+                    label: "الوصف",
+                    type: "textarea",
+                    required: true,
+                    colSpan: 2,
+                    rows: 4,
+                    placeholder: "اكتب وصفاً مختصراً يظهر للطلاب في صفحة الدورات…",
+                  },
+                ],
               },
             ]}
-            columns={1}
+            columns={2}
             submitLabel="إرسال الطلب"
             cancelLabel="إلغاء"
             onCancel={() => setCourseOpen(false)}

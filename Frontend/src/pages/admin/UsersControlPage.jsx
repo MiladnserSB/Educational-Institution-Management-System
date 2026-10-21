@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { UserPlus, Mail, Pencil, Power, PowerOff } from "lucide-react";
+import { UserPlus, Mail, Pencil, Power, PowerOff, UserRound, KeyRound } from "lucide-react";
 import Card from "../../components/common/Card";
 import PageHeader from "../../components/common/PageHeader";
 import Button from "../../components/common/Button";
@@ -10,9 +10,9 @@ import Filter from "../../components/common/Filter";
 import Avatar from "../../components/common/Avatar";
 import Spinner from "../../components/common/Spinner";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import { accountStatusBadge } from "../../components/common/Badge";
+import { accountStatusBadge } from "../../components/common/badges";
 import useFetch from "../../hooks/useFetch";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 import { adminApi } from "../../services/adminApi";
 import { formatDate, usersByRole } from "../../utils";
 
@@ -54,63 +54,78 @@ const UsersControlPage = () => {
     [secretaries, search, statusFilter],
   );
 
-  const createFields = [
+  const createSections = [
     {
-      name: "fullName",
-      label: "الاسم الكامل",
-      required: true,
-      placeholder: "مثال: سارة المطيري",
+      title: "بيانات الحساب",
+      description: "الاسم والبريد الإلكتروني ورقم التواصل.",
+      icon: <UserRound className="h-4 w-4" />,
+      fields: [
+        {
+          name: "fullName",
+          label: "الاسم الكامل",
+          required: true,
+          placeholder: "مثال: سارة المطيري",
+        },
+        {
+          name: "email",
+          label: "البريد الإلكتروني",
+          type: "email",
+          required: true,
+          placeholder: "name@edums.edu",
+          className: "ltr",
+          validate: (value) => {
+            if (!emailPattern.test(String(value || "").trim()))
+              return "صيغة البريد غير صحيحة.";
+            if (
+              allUsers.some(
+                (record) =>
+                  record.id !== editTarget?.id &&
+                  String(record.email).toLowerCase() ===
+                    String(value).trim().toLowerCase(),
+              )
+            )
+              return "البريد مستخدم بالفعل.";
+            return undefined;
+          },
+        },
+        {
+          name: "phone",
+          label: "رقم الجوال",
+          type: "tel",
+          required: true,
+          placeholder: "05xxxxxxxx",
+          className: "ltr",
+          validate: (value) =>
+            String(value || "").trim().length >= 6
+              ? undefined
+              : "رقم الجوال يجب ألا يقل عن 6 أحرف.",
+        },
+        {
+          name: "birthDate",
+          label: "تاريخ الميلاد",
+          type: "date",
+          required: true,
+        },
+      ],
     },
     {
-      name: "email",
-      label: "البريد الإلكتروني",
-      type: "email",
-      required: true,
-      placeholder: "name@edums.edu",
-      className: "ltr",
-      validate: (value) => {
-        if (!emailPattern.test(String(value || "").trim()))
-          return "صيغة البريد غير صحيحة.";
-        if (
-          allUsers.some(
-            (record) =>
-              record.id !== editTarget?.id &&
-              String(record.email).toLowerCase() ===
-                String(value).trim().toLowerCase(),
-          )
-        )
-          return "البريد مستخدم بالفعل.";
-        return undefined;
-      },
-    },
-    {
-      name: "phone",
-      label: "رقم الجوال",
-      type: "tel",
-      required: true,
-      placeholder: "05xxxxxxxx",
-      className: "ltr",
-      validate: (value) =>
-        String(value || "").trim().length >= 6
-          ? undefined
-          : "رقم الجوال يجب ألا يقل عن 6 أحرف.",
-    },
-    {
-      name: "password",
-      label: "كلمة المرور المؤقتة",
-      type: "password",
-      required: true,
-      hint: "يُغيَّر الحساب كلمة المرور لاحقاً من الملف الشخصي.",
-      validate: (value) =>
-        String(value || "").length < 6
-          ? "كلمة المرور يجب ألا تقل عن 6 أحرف."
-          : undefined,
-    },
-    {
-      name: "birthDate",
-      label: "تاريخ الميلاد",
-      type: "date",
-      required: true,
+      title: "كلمة المرور المؤقتة",
+      description: "يغيّرها المستخدم بعد أول دخول.",
+      icon: <KeyRound className="h-4 w-4" />,
+      fields: [
+        {
+          name: "password",
+          label: "كلمة المرور المؤقتة",
+          type: "password",
+          required: true,
+          hint: "يُغيَّر الحساب كلمة المرور لاحقاً من الملف الشخصي.",
+          colSpan: 2,
+          validate: (value) =>
+            String(value || "").length < 6
+              ? "كلمة المرور يجب ألا تقل عن 6 أحرف."
+              : undefined,
+        },
+      ],
     },
   ];
 
@@ -321,7 +336,7 @@ const UsersControlPage = () => {
       >
         <Form
           key={`create-${formKey}`}
-          fields={createFields}
+          sections={createSections}
           columns={2}
           submitLabel="حفظ الحساب"
           cancelLabel="إلغاء"
@@ -335,6 +350,8 @@ const UsersControlPage = () => {
         open={Boolean(editTarget)}
         onClose={() => setEditTarget(null)}
         title="تعديل الحساب"
+        description="حدّث بيانات الحساب الأساسية."
+        size="md"
       >
         {editTarget && (
           <Form
@@ -347,9 +364,9 @@ const UsersControlPage = () => {
                 ? String(editTarget.birthDate).slice(0, 10)
                 : "",
             }}
-            fields={createFields.filter((field) => field.name !== "password")}
+            sections={[createSections[0]]}
             columns={2}
-            submitLabel="حفظ"
+            submitLabel="حفظ التعديلات"
             cancelLabel="إلغاء"
             onCancel={() => setEditTarget(null)}
             onSubmit={submitEdit}

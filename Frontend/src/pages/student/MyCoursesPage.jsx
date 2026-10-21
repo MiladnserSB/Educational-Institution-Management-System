@@ -7,10 +7,8 @@ import Modal from "../../components/common/Modal";
 import EmptyState from "../../components/common/EmptyState";
 import Spinner from "../../components/common/Spinner";
 import Avatar from "../../components/common/Avatar";
-import Badge, {
-  cohortStatusBadge,
-  sessionStatusBadge,
-} from "../../components/common/Badge";
+import { cohortStatusBadge, sessionStatusBadge } from "../../components/common/badges";
+import Badge from "../../components/common/Badge";
 import useFetch from "../../hooks/useFetch";
 import { studentApi } from "../../services/studentApi";
 import { formatDate, levelsByCourse } from "../../utils";
@@ -120,7 +118,7 @@ const MyCoursesPage = () => {
     <div className="space-y-6">
       <PageHeader title="دوراتي" description="دوراتك المسجّل فيها والدورات المتاحة" />
 
-      <div className="w-fit rounded-xl border border-border bg-white p-1">
+      <div className="w-fit rounded-card border border-border bg-white p-1">
         <button onClick={() => setTab("learning")} className={tabClass(tab === "learning")}>
           <BookOpen className="h-4 w-4" /> دوراتي
         </button>

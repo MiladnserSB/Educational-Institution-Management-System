@@ -7,9 +7,9 @@ import EmptyState from "../../components/common/EmptyState";
 import Avatar from "../../components/common/Avatar";
 import Spinner from "../../components/common/Spinner";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
-import { approvalBadge } from "../../components/common/Badge";
+import { approvalBadge } from "../../components/common/badges";
 import useFetch from "../../hooks/useFetch";
-import { useToast } from "../../context/ToastContext";
+import { useToast } from "../../context/toast";
 import { adminApi } from "../../services/adminApi";
 import { alive, formatDate } from "../../utils";
 
@@ -68,8 +68,10 @@ const ApprovalsPage = () => {
   if (loading) return <Spinner label="جارٍ تحميل الطلبات…" />;
 
   const tabClass = (active) =>
-    `flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
-      active ? "bg-brand-blue text-white" : "text-muted hover:text-ink"
+    `flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+      active
+        ? "bg-brand-blue text-white shadow-sm"
+        : "text-muted hover:bg-black/[0.04] hover:text-ink"
     }`;
 
   return (
@@ -79,7 +81,7 @@ const ApprovalsPage = () => {
         description="مراجعة طلبات الدورات والمدربين الجدد"
       />
 
-      <div className="w-fit rounded-xl border border-border bg-white p-1">
+      <div className="w-fit rounded-card border border-border bg-white p-1">
         <button
           onClick={() => setTab("courses")}
           className={tabClass(tab === "courses")}

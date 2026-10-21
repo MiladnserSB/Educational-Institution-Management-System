@@ -1,16 +1,8 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useMemo, useState } from "react";
+import { AuthContext } from "./auth";
 import { getToken, setToken } from "../services/api";
 
 const USER_KEY = "edums.user";
-
-const AuthContext = createContext(null);
 
 const readStoredUser = () => {
   try {
@@ -30,14 +22,11 @@ const readStoredUser = () => {
  *   role-scoped profile update (PUT /api/student/me, /api/admin/users/:id …)
  */
 export function AuthProvider({ children }) {
+  // The session is restored from localStorage on the very first render, so
+  // there is no effect that could flash a "logged out" state.
   const [user, setUser] = useState(() =>
     getToken() ? readStoredUser() : null,
   );
-
-  useEffect(() => {
-    // If the token disappeared (e.g. cleared elsewhere), drop the profile too.
-    if (!getToken()) setUser(null);
-  }, []);
 
   const login = useCallback((session) => {
     if (session?.token) setToken(session.token);
@@ -74,10 +63,4 @@ export function AuthProvider({ children }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("useAuth must be used within AuthProvider");
-  return context;
-}
-
-export default AuthContext;
+export default AuthProvider;

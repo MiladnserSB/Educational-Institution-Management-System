@@ -1,6 +1,12 @@
-import React, { useEffect, useId } from "react";
+import { useEffect, useId } from "react";
+import { X } from "lucide-react";
 import { classNames } from "../../utils";
 
+/**
+ * Dialog. Sizes: xs | sm | md | lg | xl | 2xl.
+ * On small screens it behaves as a bottom sheet; from `sm` up it is a
+ * centered dialog.
+ */
 const Modal = ({
   open,
   onClose,
@@ -11,7 +17,7 @@ const Modal = ({
   size = "md",
   closeOnOverlay = true,
   closeOnEscape = true,
-  closeLabel = "Close",
+  closeLabel = "إغلاق",
   className = "",
   headerClassName = "",
   contentClassName = "",
@@ -20,6 +26,7 @@ const Modal = ({
 }) => {
   const generatedId = useId();
   const titleId = `${generatedId}-title`;
+
   useEffect(() => {
     if (!open) return;
     const onKey = (event) =>
@@ -34,6 +41,7 @@ const Modal = ({
   }, [open, onClose, closeOnEscape]);
 
   if (!open) return null;
+
   return (
     <div
       className="ui-modal-backdrop"
@@ -49,24 +57,26 @@ const Modal = ({
         {...props}
       >
         <header className={classNames("ui-modal-header", headerClassName)}>
-          <div>
+          <div className="min-w-0">
             {title && <h2 id={titleId}>{title}</h2>}
             {description && <p>{description}</p>}
           </div>
           <button
             type="button"
-            className="ui-icon-button"
+            className="ui-icon-button -me-1.5 -mt-1 shrink-0"
             aria-label={closeLabel}
             onClick={onClose}
           >
-            ×
+            <X className="h-4 w-4" />
           </button>
         </header>
+
         <div className={classNames("ui-modal-content", contentClassName)}>
           {children}
         </div>
+
         {footer && (
-          <footer className={`ui-modal-footer ${footerClassName}`}>
+          <footer className={classNames("ui-modal-footer", footerClassName)}>
             {footer}
           </footer>
         )}
