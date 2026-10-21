@@ -27,6 +27,14 @@ const HomePage = () => (
         <Logo />
       </Link>
       <nav className="flex items-center gap-2 sm:gap-3" aria-label="التنقل الرئيسي">
+        <a
+          href="https://ahmed333.mintlify.site/"
+          target="_blank"
+          rel="noreferrer"
+          className="rounded-btn px-3 py-2 text-sm font-semibold text-ink transition hover:bg-border/60 sm:px-4"
+        >
+          التوثيق التقني
+        </a>
         <Link
           to="/login"
           className="rounded-btn px-3 py-2 text-sm font-semibold text-ink transition hover:bg-border/60 sm:px-4"
