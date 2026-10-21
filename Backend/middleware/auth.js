@@ -13,7 +13,7 @@ export const protect = catchAsync(async (req, res, next) => {
     _id: decoded.id,
     isActive: true,
     deletedAt: null,
-  }).select("-passwordHash");
+  }).select("-password");
 
   if (!user) return next(new AppError("User not found or inactive", 401));
   req.user = user;

@@ -113,6 +113,38 @@ export const listResults = async (
 };
 
 /* ============================================================
+ * كل النتائج — للسكرتيرة.
+ * المدرس يستخدم `listResults` (مقيّد بدفعاته) والطالب يستخدم `/student/grades`.
+ * ============================================================ */
+export const listAllResults = async ({
+  cohortId,
+  enrollmentId,
+  isActive,
+} = {}) => {
+  let enrollmentIds;
+
+  if (enrollmentId) {
+    enrollmentIds = [enrollmentId];
+  } else {
+    const filter = { deletedAt: null };
+    if (cohortId) filter.cohortId = cohortId;
+    const enrollments = await Enrollment.find(filter).select("_id").lean();
+    enrollmentIds = enrollments.map((e) => e._id);
+  }
+
+  const filter = { enrollmentId: { $in: enrollmentIds }, deletedAt: null };
+  if (isActive !== undefined)
+    filter.isActive = isActive === "true" || isActive === true;
+
+  const items = await EnrollmentResult.find(filter).sort("-createdAt").lean();
+
+  return {
+    items: items.map(shape),
+    meta: { page: 1, limit: items.length, total: items.length, pages: 1 },
+  };
+};
+
+/* ============================================================
  * إنشاء / تعديل / حذف
  * ============================================================ */
 export const createResult = async (teacherId, data) => {

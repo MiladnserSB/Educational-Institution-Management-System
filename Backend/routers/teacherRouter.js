@@ -10,6 +10,10 @@ import {
   updateResultSchema,
   approveAllSchema,
 } from "../validators/teacherValidator.js";
+import {
+  createNoteSchema,
+  updateNoteSchema,
+} from "../validators/noteValidator.js";
 
 const router = Router();
 
@@ -20,6 +24,9 @@ router.use(protect, restrictTo("teacher"));
 router.get("/stats", ctrl.stats);
 router.get("/cohorts", ctrl.myCohorts);
 router.get("/sessions/upcoming", ctrl.upcomingSessions);
+
+/* ---------- Catalog (courses + levels of the teacher cohorts) ---------- */
+router.get("/catalog", ctrl.catalog);
 
 /* ---------- Sessions ---------- */
 router.get("/sessions", ctrl.listSessions);
@@ -45,5 +52,11 @@ router.delete("/results/:id", ctrl.deleteResult);
 
 /* ---------- Students ---------- */
 router.get("/students", ctrl.listStudents);
+
+/* ---------- Notes ---------- */
+router.get("/notes", ctrl.listNotes);
+router.post("/notes", validate(createNoteSchema), ctrl.createNote);
+router.put("/notes/:id", validate(updateNoteSchema), ctrl.updateNote);
+router.delete("/notes/:id", ctrl.deleteNote);
 
 export default router;

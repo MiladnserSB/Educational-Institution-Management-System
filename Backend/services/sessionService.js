@@ -71,6 +71,39 @@ export const listSessions = async (
   };
 };
 
+/**
+ * كل الجلسات — للسكرتيرة (لا يوجد مسار جلسات للسكرتيرة في الراوتر).
+ */
+export const listAllSessions = async ({
+  cohortId,
+  status,
+  search,
+  page = 1,
+  limit = 200,
+} = {}) => {
+  const filter = {};
+  if (cohortId) filter.cohortId = cohortId;
+  if (status) filter.status = status;
+  if (search) filter.topic = new RegExp(escapeRegex(search), "i");
+
+  page = Math.max(1, Number(page) || 1);
+  limit = Math.min(200, Math.max(1, Number(limit) || 200));
+
+  const [items, total] = await Promise.all([
+    Session.find(filter)
+      .sort("-sessionDate")
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    Session.countDocuments(filter),
+  ]);
+
+  return {
+    items: items.map(shape),
+    meta: { page, limit, total, pages: Math.ceil(total / limit) },
+  };
+};
+
 export const createSession = async (teacherId, data) => {
   await ensureCohortOwnership(data.cohortId, teacherId);
 
